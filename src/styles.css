@@ -1,0 +1,189 @@
+/*
+ * Estilo do pacote de front da família (contrato §2, §3, §5).
+ *
+ * Próprio, sem `@layer`, sem depender do Tailwind do hospedeiro — origem
+ * sem camada vence origem em camada na cascata, antes de qualquer
+ * especificidade ser comparada, e o CSS do wp-admin não usa camadas
+ * (contrato §5, V3RCore-Code#36). Usar `@layer` aqui devolveria esse
+ * defeito.
+ *
+ * A cor de destaque vem de `--v3r-accent`, declarada pelo plugin hospedeiro.
+ * O valor de fallback abaixo (#5b6b7a, um cinza-azulado neutro) é só um
+ * recurso de renderização legível na ausência da variável — não é cor de
+ * produto, e nenhum produto da família deve usá-lo como identidade.
+ */
+
+@font-face {
+  font-family: 'Exo 2';
+  src: url('../assets/fonts/exo2-variable-latin.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.v3r-header,
+.v3r-nav-groups,
+.v3r-nav-tabs,
+.v3r-nav-flat,
+.v3r-admin-notices {
+  font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+.v3r-header *,
+.v3r-nav-groups *,
+.v3r-nav-tabs *,
+.v3r-nav-flat *,
+.v3r-admin-notices * {
+  box-sizing: border-box;
+}
+
+/* Cabeçalho — 64px (contrato §2). */
+.v3r-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+}
+
+.v3r-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.v3r-header__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.v3r-header__divider {
+  width: 1px;
+  height: 32px;
+  background: #e2e2e2;
+  flex-shrink: 0;
+}
+
+.v3r-header__titles {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.v3r-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1f2933;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v3r-header__version {
+  font-size: 12px;
+  line-height: 1.2;
+  color: #7b8794;
+}
+
+.v3r-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/*
+ * Navegação (contrato §6-§7). `.v3r-nav-groups` e `.v3r-nav-tabs` só
+ * aparecem juntas quando a árvore tem grupos; `.v3r-nav-flat` é o caso de
+ * primeira classe de árvore só com telas, e usa a densidade da barra de
+ * GRUPOS (40px/14px), não a de abas: a densidade acompanha a posição na
+ * hierarquia, não o que o item aponta. Sendo a barra do topo da tela, ela é
+ * do tamanho da barra do topo em toda a família — senão dois produtos da
+ * mesma casa exibem navegação principal de tamanhos diferentes, que é
+ * exatamente o que a peça compartilhada existe para impedir.
+ *
+ * `flex-wrap: wrap` quebra em linha sem esconder item nem exigir clique
+ * (contrato §7). `row-gap` mantém o espaçamento vertical entre linhas
+ * consistente com o espaçamento horizontal entre itens, o que resolve o
+ * alinhamento entre as linhas quebradas.
+ */
+.v3r-nav-groups,
+.v3r-nav-tabs,
+.v3r-nav-flat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.v3r-nav-groups,
+.v3r-nav-flat {
+  min-height: 40px;
+  padding: 8px 24px;
+  gap: 8px 24px;
+  font-size: 14px;
+}
+
+.v3r-nav-tabs {
+  min-height: 36px;
+  padding: 8px 24px;
+  gap: 8px 20px;
+  font-size: 13px;
+}
+
+.v3r-nav__item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 0 8px;
+  margin: 0;
+  font: inherit;
+  color: #52606d;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  line-height: 1;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.v3r-nav__item:hover {
+  color: #1f2933;
+}
+
+.v3r-nav__item--active {
+  color: var(--v3r-accent, #5b6b7a);
+  border-bottom-color: var(--v3r-accent, #5b6b7a);
+  font-weight: 600;
+}
+
+/* Área de avisos do wp-admin (contrato §8). */
+.v3r-admin-notices {
+  width: 100%;
+  padding: 0 24px;
+}
+
+.v3r-admin-notices > .notice,
+.v3r-admin-notices > .updated,
+.v3r-admin-notices > .error {
+  margin: 12px 0 !important;
+}
+
+.v3r-admin-notices__marker {
+  display: none;
+}
