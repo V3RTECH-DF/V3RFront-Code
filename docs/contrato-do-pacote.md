@@ -99,9 +99,21 @@ variável **incondicionalmente** — ainda que vazia, ainda que só para "deixar
 lugar pronto" — desliga o valor de reserva para sempre, e quem lê o código vê um
 `var()` com reserva e conclui que está coberto.
 
+**O dever do consumidor, em uma frase:** *não escreva a variável quando não
+tiver valor válido — omita.* Valor inválido, em branco ou desconhecido não pode
+virar variável vazia; tem de não virar variável nenhuma, que é o único estado em
+que o valor de reserva funciona.
+
+⚠️ **Valide no ponto de escrita, não no de leitura.** Quem escreve a variável
+decide se a reserva de quem lê vive ou morre — e nenhuma revisão do lado do
+pacote pega isso. Um consumidor que "deixe o lugar pronto" escrevendo vazio
+desliga a reserva de tudo que estiver abaixo.
+
 Trazido pela adoção no V3RLGPD, que bateu na mesma classe de problema no CSS
 deles: uma variável sempre presente fazia o valor de reserva nunca entrar em
-vigor, e "tem reserva" parecia "a reserva é usada".
+vigor, e "tem reserva" parecia "a reserva é usada". A defesa que funcionou lá
+foi exatamente esta: cor só é emitida se casar com o formato esperado, opções
+saem de um mapa fechado, e o bloco só é escrito se sobrou algum valor.
 
 ## 5. Estilo próprio, sem depender do hospedeiro
 
