@@ -202,10 +202,11 @@ redeclarar o formato.
 ### Decisão registrada: densidade da barra única (`.v3r-nav-flat`)
 
 O contrato fixa os números de duas barras (grupos 40px/14px, abas 36px/13px)
-mas não decide qual densidade vale quando existe **uma barra só** — caso de
-árvore sem grupos. Adotado: densidade de abas (36px/13px), por ser a barra
-que navega entre telas, papel que a barra única cumpre nesse caso. Registrado
-aqui por não ter sido uma decisão explícita do contrato original — não muda
-nenhum critério de aceite (nenhum deles depende do valor exato em px da barra
-única), mas é o tipo de detalhe que vale documentar em vez de deixar
-implícito no código.
+mas não dizia qual densidade vale quando existe **uma barra só** — caso de
+árvore sem grupos. Adotado: **densidade de grupos (40px/14px)**.
+
+A densidade acompanha a **posição na hierarquia**, não o que o item aponta.
+Sendo a barra do topo da tela, ela tem o tamanho da barra do topo em toda a
+família; o contrário faria dois produtos da mesma casa exibirem navegação
+principal de tamanhos diferentes — exatamente o que a peça compartilhada
+existe para impedir.
