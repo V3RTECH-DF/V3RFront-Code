@@ -26,14 +26,47 @@ describe('estilo do pacote (contrato §5)', () => {
 })
 
 describe('cor de destaque (contrato §4)', () => {
-  it('o estado ativo da navegação lê --v3r-accent, com fallback neutro em hex', () => {
-    const activeBlockMatch = css.match(/\.v3r-nav__item--active\s*{([^}]*)}/)
+  const activeBlockMatch = css.match(/\.v3r-nav__item--active\s*{([^}]*)}/)
+  const activeBlock = activeBlockMatch ? activeBlockMatch[1] : ''
+  const inactiveBlockMatch = css.match(/\.v3r-nav__item\s*{([^}]*)}/)
+  const inactiveBlock = inactiveBlockMatch ? inactiveBlockMatch[1] : ''
+
+  it('o traço de base do item ativo lê --v3r-accent, com fallback neutro em hex', () => {
     expect(activeBlockMatch).not.toBeNull()
-    const block = activeBlockMatch![1]
 
     // Precisa ler a variável (não uma cor fixa) e trazer um fallback, para o
     // componente continuar legível quando o plugin não a declarar.
-    expect(block).toMatch(/var\(--v3r-accent,\s*#[0-9a-fA-F]{3,8}\)/)
+    const borderMatch = activeBlock.match(/border-bottom-color:\s*([^;]+);/)
+    expect(borderMatch).not.toBeNull()
+    expect(borderMatch![1]).toMatch(/var\(--v3r-accent,\s*#[0-9a-fA-F]{3,8}\)/)
+  })
+
+  it('o texto do item ativo NÃO usa --v3r-accent (controle: mesma cor não pode pintar texto)', () => {
+    expect(activeBlockMatch).not.toBeNull()
+    const colorMatch = activeBlock.match(/(?:^|\s)color:\s*([^;]+);/)
+    expect(colorMatch).not.toBeNull()
+    expect(colorMatch![1]).not.toMatch(/--v3r-accent/)
+    // e precisa ser uma cor sólida fixa do pacote, não outra variável.
+    expect(colorMatch![1]).toMatch(/#[0-9a-fA-F]{3,8}/)
+  })
+
+  it('o texto do item ativo é ao menos tão escuro quanto o dos inativos', () => {
+    expect(inactiveBlockMatch).not.toBeNull()
+
+    const activeColorMatch = activeBlock.match(/(?:^|\s)color:\s*#([0-9a-fA-F]{6});/)
+    const inactiveColorMatch = inactiveBlock.match(/(?:^|\s)color:\s*#([0-9a-fA-F]{6});/)
+    expect(activeColorMatch).not.toBeNull()
+    expect(inactiveColorMatch).not.toBeNull()
+
+    const luminance = (hex: string) => {
+      const r = parseInt(hex.slice(0, 2), 16)
+      const g = parseInt(hex.slice(2, 4), 16)
+      const b = parseInt(hex.slice(4, 6), 16)
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    // "ao menos tão escuro" = luminância <= à dos inativos, nunca mais claro.
+    expect(luminance(activeColorMatch![1])).toBeLessThanOrEqual(luminance(inactiveColorMatch![1]))
   })
 })
 
@@ -80,6 +113,22 @@ describe('espaço do logo do cabeçalho (contrato §2/§11)', () => {
     // Controle negativo: largura fixa aqui espremeria ou cortaria a marca
     // em vez de manter a proporção natural.
     expect(block).not.toMatch(/width:\s*\d+px/)
+  })
+})
+
+describe('fonte na tela inteira (contrato §3)', () => {
+  it('o chrome do pacote usa Exo 2 sempre, sem depender de classe extra do consumidor', () => {
+    const chromeBlockMatch = css.match(
+      /\.v3r-header,\s*\n?\.v3r-nav-groups,\s*\n?\.v3r-nav-tabs,\s*\n?\.v3r-nav-flat,\s*\n?\.v3r-admin-notices\s*{([^}]*)}/
+    )
+    expect(chromeBlockMatch).not.toBeNull()
+    expect(chromeBlockMatch![1]).toMatch(/font-family:\s*'Exo 2'/)
+  })
+
+  it('existe uma classe que o consumidor põe na raiz para aplicar a fonte à tela inteira', () => {
+    const rootBlockMatch = css.match(/\.v3r-typography\s*{([^}]*)}/)
+    expect(rootBlockMatch).not.toBeNull()
+    expect(rootBlockMatch![1]).toMatch(/font-family:\s*'Exo 2'/)
   })
 })
 

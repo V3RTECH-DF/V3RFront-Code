@@ -36,8 +36,26 @@ listas, onde a altura faz falta.
 ## 3. Tipografia
 
 **Exo 2**, embarcada no pacote (`assets/fonts/exo2-variable-latin.woff2`, fonte
-variável, latin + latin-ext), declarada para **a tela inteira do plugin**, não só
-para o cabeçalho — duas tipografias na mesma tela é o que se evita.
+variável, latin + latin-ext).
+
+O **chrome do pacote** (`FamilyHeader`, `FamilyNav`, `AdminNotices`) usa a Exo 2
+sempre, sem o consumidor fazer nada — é o CSS próprio das classes `.v3r-header`,
+`.v3r-nav-*` e `.v3r-admin-notices`.
+
+Para valer na **tela inteira**, que é o objetivo (duas tipografias na mesma tela
+é o que se evita), o consumidor põe a classe `.v3r-typography` na raiz da própria
+aplicação. O pacote não alcança essa raiz sozinho sem invadir o `body` do
+wp-admin, o que seria pior — então essa classe é a fronteira, e em tela de
+painel **não é opcional**: é parte da adoção do pacote, não um acabamento
+opcional.
+
+⚠️ **Exceção deliberada:** superfície que exibe a **identidade de uma
+organização cliente** — caso do V3RLGPD, que renderiza a gestão numa página
+pública com a marca, as cores e a fonte que a própria organização configurou —
+**não** recebe `.v3r-typography`. Ali a regra da casa é "estrutura da família,
+identidade da organização": a geometria e o comportamento são nossos, a
+identidade visual é de quem hospeda. Forçar a nossa fonte nessa superfície
+contrariaria a decisão de produto.
 
 ## 4. Cor
 
@@ -52,6 +70,18 @@ pacote não traz paleta** — a cor é deliberadamente diferente por produto (â
 no GE Associados e no Premiado, vermelho no V3REvent e no V3RLicense, roxo no
 Flow, laranja no Solidário), e uma peça que trouxesse a própria cor apagaria a
 identidade de cinco produtos.
+
+⚠️ **`--v3r-accent` nunca pinta texto — só o traço de 2px na base do item
+ativo.** Várias cores de marca da família são claras (âmbar `#f2a603` no GE
+Associados e no Premiado, laranja `#F49E27` no Solidário, `#da8c1c` no
+V3RLGPD), e como cor de texto de 14px sobre fundo branco têm contraste
+insuficiente — o item selecionado ficaria menos legível que os inativos, que
+usam um cinza escuro. E o pacote não escolhe a cor para evitar esse problema:
+ela é do produto, por definição arbitrária. O item ativo usa um neutro escuro
+fixo do pacote como texto, e a cor de marca fica só no traço — elemento
+gráfico, não texto, onde qualquer cor funciona. O item continua inequívoco
+pela combinação traço colorido + texto mais escuro + peso. Esta é a regra que
+impede reintroduzir `--v3r-accent` como `color` do item ativo.
 
 ## 5. Estilo próprio, sem depender do hospedeiro
 

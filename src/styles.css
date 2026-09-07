@@ -11,6 +11,16 @@
  * O valor de fallback abaixo (#5b6b7a, um cinza-azulado neutro) é só um
  * recurso de renderização legível na ausência da variável — não é cor de
  * produto, e nenhum produto da família deve usá-lo como identidade.
+ *
+ * `--v3r-accent` NUNCA pinta texto (contrato §4). O pacote não escolhe nem
+ * controla essa cor — ela é de marca, arbitrária por produto, e várias são
+ * claras (âmbar, laranja) e não têm contraste suficiente como texto de 14px
+ * sobre fundo branco. Usá-la como `color` do item ativo deixaria justamente
+ * o item selecionado menos legível que os inativos. O destaque pinta só o
+ * traço de 2px na base do item — elemento gráfico, não texto, onde qualquer
+ * cor de marca funciona. O texto do item ativo usa um neutro escuro fixo do
+ * pacote, e o item continua inequívoco pela combinação de traço colorido +
+ * texto mais escuro + peso.
  */
 
 @font-face {
@@ -36,6 +46,26 @@
 .v3r-nav-flat *,
 .v3r-admin-notices * {
   box-sizing: border-box;
+}
+
+/*
+ * Fonte da família na tela inteira (contrato §3). O chrome do pacote
+ * (`.v3r-header`, `.v3r-nav-*`, `.v3r-admin-notices`) já usa Exo 2 sempre,
+ * pela regra acima — sem o consumidor fazer nada. Para o RESTO da tela do
+ * plugin, que o pacote não alcança sem invadir o `body` do wp-admin, o
+ * consumidor põe `.v3r-typography` na raiz da própria aplicação. A
+ * declaração aqui não repete `* { }`: `font-family` já herda por natureza
+ * do CSS, então basta declarar na raiz para valer em todos os descendentes
+ * que não sobrescreverem a própria fonte.
+ *
+ * Exceção deliberada: superfície que exibe a identidade de uma organização
+ * cliente (ex.: V3RLGPD, página pública com a marca/cor/fonte que a
+ * organização hospedada configurou) NÃO recebe esta classe — ali a regra é
+ * "estrutura da família, identidade da organização", e a fonte é da
+ * identidade, não da estrutura.
+ */
+.v3r-typography {
+  font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
 }
 
 /* Cabeçalho — 64px (contrato §2). */
@@ -192,7 +222,7 @@
 }
 
 .v3r-nav__item--active {
-  color: var(--v3r-accent, #5b6b7a);
+  color: #1f2933;
   border-bottom-color: var(--v3r-accent, #5b6b7a);
   font-weight: 600;
 }
