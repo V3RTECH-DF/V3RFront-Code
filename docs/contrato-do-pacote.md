@@ -137,6 +137,36 @@ valor final está certo **não serve** — passa igual se a reserva for decoraç
 
 Régua, cuidado e validação vieram da adoção no V3RLGPD (`V3RLGPD-Code#106`).
 
+## Adotar numa superfície que exibe a identidade de uma organização
+
+Quando a tela carrega a marca de um cliente — o caso da gestão embutida no site,
+onde vale **"estrutura da família, identidade da organização"** —, confira as
+**três** dimensões da identidade ao adotar, e não só a que já deu problema:
+
+1. **cor de destaque**;
+2. **logo**, inclusive o caso "nenhum";
+3. **fonte**.
+
+⚠️ **As três, sempre — mesmo as que parecem obviamente intactas.** Na adoção que
+originou esta seção, só a cor tinha medição pronta, e ela existia porque um
+defeito já havia acontecido ali. Fonte e logo não tinham equivalente. **Mede-se
+onde já doeu**, e é assim que a segunda dimensão é descoberta por acidente, meses
+depois, por um cliente.
+
+### O critério que discrimina
+
+**Troque o tema da organização e exija que o valor MUDE.** Verificar que o valor
+é o esperado passa igual se ele estiver fixo naquele valor por acaso.
+
+⚠️ **Com controle negativo:** o valor de reserva do pacote **não pode coincidir**
+com nenhum dos dois temas medidos — senão "seguiu o tema" e "caiu na reserva"
+ficam indistinguíveis, e a medição não distingue nada.
+
+E prove por **mutação**: injete o defeito que você teme (uma regra do pacote
+alcançando o conteúdo, um valor fixo no lugar da variável) e confirme que a
+medição **falha**. Passar não é informação enquanto ninguém mostrou que ela
+saberia reprovar.
+
 ## 5. Estilo próprio, sem depender do hospedeiro
 
 O CSS do pacote é **próprio, sem `@layer`, com nomes de classe próprios**, e não
