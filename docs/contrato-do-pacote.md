@@ -83,6 +83,26 @@ gráfico, não texto, onde qualquer cor funciona. O item continua inequívoco
 pela combinação traço colorido + texto mais escuro + peso. Esta é a regra que
 impede reintroduzir `--v3r-accent` como `color` do item ativo.
 
+### ⚠️ Declare a cor com valor, ou não declare — nunca vazia
+
+O pacote usa `var(--v3r-accent, <neutro>)`, e esse valor de reserva protege
+contra **a variável não existir**. Ele **não** protege contra ela existir vazia.
+
+Variável declarada sem valor faz o `var()` resolver para nada, e a declaração
+inteira vira inválida — a propriedade cai no valor inicial, **não** no valor de
+reserva. Efeito prático: o traço do item ativo **some**, e a navegação para de
+indicar onde a pessoa está. Sem erro nenhum.
+
+⚠️ **A regra geral, que vale para qualquer variável de configuração:** valor de
+reserva é mecanismo para *ausência*, não para *padrão*. Consumidor que escreva a
+variável **incondicionalmente** — ainda que vazia, ainda que só para "deixar o
+lugar pronto" — desliga o valor de reserva para sempre, e quem lê o código vê um
+`var()` com reserva e conclui que está coberto.
+
+Trazido pela adoção no V3RLGPD, que bateu na mesma classe de problema no CSS
+deles: uma variável sempre presente fazia o valor de reserva nunca entrar em
+vigor, e "tem reserva" parecia "a reserva é usada".
+
 ## 5. Estilo próprio, sem depender do hospedeiro
 
 O CSS do pacote é **próprio, sem `@layer`, com nomes de classe próprios**, e não
