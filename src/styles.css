@@ -202,6 +202,21 @@
   font-size: 13px;
 }
 
+/*
+ * A barra de abas soma 36px de conteúdo (8px de padding acima + item + 8px
+ * abaixo) só se o item, sozinho, medir 20px. Com o padding inferior do item
+ * igual ao da barra de grupos (8px), o item de aba soma 13(linha) + 8 + 2
+ * (traço) = 23px, e a barra passa a medir 39 + 1px de borda = 40 — o
+ * `min-height: 36px` nunca chega a valer, porque o conteúdo já é maior.
+ * Reduzir só o espaçamento inferior do item de aba (8px → 5px) fecha a
+ * conta em 13 + 5 + 2 = 20px de item, e 8 + 20 + 8 = 36px de barra — mais a
+ * borda de 1px, os 37px do contrato §2. O traço de 2px do item ativo e o
+ * padding da barra em si (8px 24px, igual ao da barra de grupos) não mudam.
+ */
+.v3r-nav-tabs .v3r-nav__item {
+  padding-bottom: 5px;
+}
+
 .v3r-nav__item {
   appearance: none;
   border: none;

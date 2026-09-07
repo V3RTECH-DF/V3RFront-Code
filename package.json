@@ -1,16 +1,18 @@
 {
   "name": "@v3rtech/v3r-front",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Peça de tela compartilhada pelos plugins WordPress da família V3RTECH/RIT: cabeçalho, navegação e área de avisos do painel.",
   "license": "UNLICENSED",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "./dist/index.browser.js",
+  "module": "./dist/index.browser.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "browser": "./dist/index.browser.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./styles.css": "./dist/v3r-front.css"
   },
@@ -19,10 +21,11 @@
     "README.md"
   ],
   "sideEffects": [
-    "*.css"
+    "*.css",
+    "./dist/index.browser.js"
   ],
   "scripts": {
-    "build": "vite build && node scripts/inject-css-import.mjs && tsc -p tsconfig.build.json && node scripts/verify-dist.mjs",
+    "build": "vite build && node scripts/inject-css-import.mjs && vite build --config vite.config.node.ts && tsc -p tsconfig.build.json && node scripts/verify-dist.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build"

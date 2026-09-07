@@ -1,10 +1,11 @@
 // Confere, depois do build, que o `dist/` produzido bate com o que o
 // `package.json` promete e com os critérios de aceite que não fazem sentido
 // como teste de unidade (conteúdo do bundle publicado).
-import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
 import { build } from 'vite'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -19,7 +20,7 @@ function ok(message) {
   console.log(`[verify-dist] ok: ${message}`)
 }
 
-const requiredFiles = ['index.js', 'index.d.ts', 'v3r-front.css']
+const requiredFiles = ['index.js', 'index.browser.js', 'index.d.ts', 'v3r-front.css']
 for (const file of requiredFiles) {
   const path = resolve(dist, file)
   if (!existsSync(path)) {
@@ -30,8 +31,11 @@ for (const file of requiredFiles) {
 }
 
 const jsPath = resolve(dist, 'index.js')
-if (existsSync(jsPath)) {
-  const js = readFileSync(jsPath, 'utf8')
+const browserJsPath = resolve(dist, 'index.browser.js')
+
+function checkReactExternal(path, label) {
+  if (!existsSync(path)) return
+  const js = readFileSync(path, 'utf8')
 
   // React não pode estar embutido: procura marcadores internos do runtime
   // do React (não a palavra "react", que aparece legitimamente nos imports
@@ -40,16 +44,40 @@ if (existsSync(jsPath)) {
   const reactInternals = ['ReactCurrentDispatcher', 'react.element', 'react.fragment', 'ReactSharedInternals']
   const found = reactInternals.filter((marker) => js.includes(marker))
   if (found.length > 0) {
-    fail(`dist/index.js parece conter React embutido (marcadores: ${found.join(', ')})`)
+    fail(`${label} parece conter React embutido (marcadores: ${found.join(', ')})`)
   } else {
-    ok('dist/index.js não contém marcadores internos do React')
+    ok(`${label} não contém marcadores internos do React`)
   }
 
   const hasExternalImport = /from\s*['"]react['"]/.test(js) || /require\(['"]react['"]\)/.test(js)
   if (!hasExternalImport) {
-    fail('dist/index.js não importa "react" como módulo externo — build pode ter embutido o runtime')
+    fail(`${label} não importa "react" como módulo externo — build pode ter embutido o runtime`)
   } else {
-    ok('dist/index.js importa "react" como módulo externo')
+    ok(`${label} importa "react" como módulo externo`)
+  }
+}
+
+checkReactExternal(jsPath, 'dist/index.js')
+checkReactExternal(browserJsPath, 'dist/index.browser.js')
+
+// A entrada Node-safe não pode ter rastro de import de CSS — é exatamente o
+// que a distingue da entrada "browser" (contrato: quem resolve como Node não
+// pode ser obrigado a processar CSS).
+if (existsSync(jsPath)) {
+  const js = readFileSync(jsPath, 'utf8')
+  if (/\.css/i.test(js)) {
+    fail('dist/index.js referencia arquivo de CSS — a entrada Node-safe precisa ficar livre disso')
+  } else {
+    ok('dist/index.js não referencia arquivo de CSS')
+  }
+}
+
+if (existsSync(browserJsPath)) {
+  const js = readFileSync(browserJsPath, 'utf8')
+  if (!js.includes('v3r-front.css')) {
+    fail('dist/index.browser.js não referencia v3r-front.css — a entrada "browser" precisa embarcar o CSS')
+  } else {
+    ok('dist/index.browser.js referencia v3r-front.css')
   }
 }
 
@@ -86,6 +114,27 @@ if (existsSync(dtsPath)) {
   }
 }
 
+// A partir daqui, os fixtures resolvem `@v3rtech/v3r-front` pela resolução
+// REAL de pacote — um `node_modules/@v3rtech/v3r-front` simbólico apontando
+// para a raiz do próprio pacote (que tem `package.json` com o `exports` que
+// acabou de ser escrito, e o `dist/` que acabou de ser construído). Assim
+// tanto o Vite (que aplica a condição "browser" por padrão em build de
+// cliente) quanto o Node puro (que NUNCA aplica "browser") escolhem a
+// variante que o `package.json` de fato serve para cada um — em vez de um
+// `resolveId` nosso decidir por eles, o que testaria uma resolução que
+// nenhum consumidor real usa.
+const workspaceDir = mkdtempSync(resolve(tmpdir(), 'v3r-front-verify-dist-'))
+const workspaceModulesDir = resolve(workspaceDir, 'node_modules')
+const scopedModulesDir = resolve(workspaceModulesDir, '@v3rtech')
+mkdirSync(scopedModulesDir, { recursive: true })
+symlinkSync(root, resolve(scopedModulesDir, 'v3r-front'), 'dir')
+// `react` é peerDependency (nunca embutida) — o runner Node puro do teste
+// abaixo precisa achá-la, do mesmo jeito que qualquer consumidor real teria
+// `react` instalada. Aponta para a mesma cópia já usada por este pacote.
+for (const dep of ['react', 'react-dom']) {
+  symlinkSync(resolve(root, 'node_modules', dep), resolve(workspaceModulesDir, dep), 'dir')
+}
+
 // Quem importa só os componentes precisa receber o CSS junto no resultado
 // construído — sem precisar de um segundo import da folha de estilo. E quem
 // importa os componentes E a folha explicitamente não pode ter a regra
@@ -93,7 +142,11 @@ if (existsSync(dtsPath)) {
 // um consumidor fictício que importa o pacote publicado — igual a qualquer
 // plugin da família faz.
 async function buildFixture(withExplicitStyles) {
-  const fixtureDir = mkdtempSync(resolve(tmpdir(), 'v3r-front-verify-dist-'))
+  // Precisa viver DENTRO do workspace (não num tmpdir irmão): a resolução
+  // de `node_modules` do Node/Vite sobe a árvore de diretórios a partir do
+  // arquivo que importa — só encontra o `node_modules` simbólico do
+  // workspace se o entry estiver debaixo dele.
+  const fixtureDir = mkdtempSync(resolve(workspaceDir, 'fixture-'))
   const entryPath = resolve(fixtureDir, 'entry.js')
   const source = withExplicitStyles
     ? "import { FamilyHeader } from '@v3rtech/v3r-front'\n" +
@@ -104,7 +157,10 @@ async function buildFixture(withExplicitStyles) {
 
   try {
     const result = await build({
-      root: fixtureDir,
+      // A raiz do build é o workspace com o `node_modules` simbólico — é
+      // dali que a resolução de `@v3rtech/v3r-front` precisa enxergar o
+      // pacote, para o algoritmo padrão do Node/Vite entrar em ação.
+      root: workspaceDir,
       logLevel: 'silent',
       configFile: false,
       build: {
@@ -119,41 +175,33 @@ async function buildFixture(withExplicitStyles) {
           external: ['react', 'react-dom', 'react/jsx-runtime'],
         },
       },
-      plugins: [
-        {
-          // Resolve os specifiers do pacote para o `dist/` que acabou de
-          // ser construído — é o mesmo `dist/` que vai ser publicado.
-          name: 'v3r-front-verify-fixture-resolve',
-          resolveId(id) {
-            if (id === '@v3rtech/v3r-front') return resolve(dist, 'index.js')
-            if (id === '@v3rtech/v3r-front/styles.css') return resolve(dist, 'v3r-front.css')
-            return null
-          },
-        },
-      ],
     })
 
     const output = Array.isArray(result) ? result[0].output : result.output
     const cssAsset = output.find((asset) => asset.fileName?.endsWith('.css'))
-    return cssAsset ? cssAsset.source ?? cssAsset.code ?? '' : ''
+    const jsAsset = output.find((asset) => asset.fileName?.endsWith('.js'))
+    return {
+      css: cssAsset ? cssAsset.source ?? cssAsset.code ?? '' : '',
+      js: jsAsset ? jsAsset.code ?? '' : '',
+    }
   } finally {
     rmSync(fixtureDir, { recursive: true, force: true })
   }
 }
 
-if (existsSync(jsPath) && existsSync(cssPath)) {
+if (existsSync(jsPath) && existsSync(browserJsPath) && existsSync(cssPath)) {
   try {
     const marker = /\.v3r-header\s*\{/
 
-    const onlyComponentsCss = await buildFixture(false)
-    if (marker.test(onlyComponentsCss)) {
-      ok('consumidor que importa só os componentes recebe o CSS no resultado construído')
+    const onlyComponents = await buildFixture(false)
+    if (marker.test(onlyComponents.css)) {
+      ok('consumidor construído para o navegador, importando só os componentes, recebe o CSS no resultado')
     } else {
-      fail('consumidor que importa só os componentes NÃO recebeu o CSS no resultado construído')
+      fail('consumidor construído para o navegador, importando só os componentes, NÃO recebeu o CSS no resultado')
     }
 
-    const withExplicitStylesCss = await buildFixture(true)
-    const occurrences = (withExplicitStylesCss.match(new RegExp(marker.source, 'g')) || []).length
+    const withExplicitStyles = await buildFixture(true)
+    const occurrences = (withExplicitStyles.css.match(new RegExp(marker.source, 'g')) || []).length
     if (occurrences === 1) {
       ok('importar componentes e a folha explicitamente não duplica as regras no resultado')
     } else {
@@ -165,7 +213,37 @@ if (existsSync(jsPath) && existsSync(cssPath)) {
   } catch (error) {
     fail(`falha ao construir consumidor fictício para verificar o CSS: ${error.message}`)
   }
+
+  // Um arquivo que importe SÓ os componentes, executado por um runner Node
+  // sem processar CSS, não pode estourar. `node script.mjs`, sem Vite/Vitest
+  // no meio, é o runner mais hostil que existe para isso: Node nunca aplica
+  // a condição "browser" por padrão, então a resolução cai exatamente onde
+  // sete plugins caíram (contrato do prompt) — em `dist/index.js`, sem CSS.
+  try {
+    const nodeScriptPath = resolve(workspaceDir, 'run-in-plain-node.mjs')
+    writeFileSync(
+      nodeScriptPath,
+      "import { FamilyHeader } from '@v3rtech/v3r-front'\n" +
+        "if (typeof FamilyHeader !== 'function') {\n" +
+        "  throw new Error('FamilyHeader não foi resolvido como função')\n" +
+        '}\n' +
+        "console.log('OK')\n"
+    )
+    const stdout = execFileSync(process.execPath, [nodeScriptPath], {
+      cwd: workspaceDir,
+      encoding: 'utf8',
+    })
+    if (stdout.trim() === 'OK') {
+      ok('runner Node puro (sem processar CSS) importa só os componentes sem estourar')
+    } else {
+      fail(`runner Node puro produziu saída inesperada: ${stdout}`)
+    }
+  } catch (error) {
+    fail(`runner Node puro estourou ao importar só os componentes: ${error.message}`)
+  }
 }
+
+rmSync(workspaceDir, { recursive: true, force: true })
 
 if (process.exitCode === 1) {
   console.error('[verify-dist] build reprovado — corrija antes de publicar.')

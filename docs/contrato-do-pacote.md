@@ -169,11 +169,30 @@ livres de qualquer referência a arquivo de CSS, para o `.d.ts` publicado não
 apontar para um módulo que não existe em `dist/` sob esse nome.
 
 ⚠️ **O import da folha de estilo não é mais obrigatório (a partir da
-v0.4.0).** `dist/index.js` já carrega o CSS do pacote junto — quem importa só
-os componentes recebe o estilo. Quem quiser controlar o carregamento (por
-exemplo, para adiar ou isolar o CSS) continua podendo importar
-`@v3rtech/v3r-front/styles.css` explicitamente: é o mesmo arquivo, e importar
-os dois não duplica regra nenhuma no resultado construído.
+v0.4.0).** Quem constrói para o navegador — o caso normal, hoje todo
+consumidor usa Vite — já recebe o CSS do pacote junto, sem precisar importar
+a folha. Quem quiser controlar o carregamento (por exemplo, para adiar ou
+isolar o CSS) continua podendo importar `@v3rtech/v3r-front/styles.css`
+explicitamente: é o mesmo arquivo, e importar os dois não duplica regra
+nenhuma no resultado construído.
+
+⚠️ **Duas variantes do JS publicado, escolhidas pela condição de resolução
+(a partir da v0.5.0).** `dist/index.browser.js` embarca `import
+'./v3r-front.css'` e é servido pela condição `"browser"` do `package.json` —
+a que bundlers como Vite aplicam por padrão em build de cliente.
+`dist/index.js` **não** importa CSS e é servido pelas condições
+`"import"`/`"default"` — as que o Node aplica quando resolve `import`
+diretamente, sem bundler. Antes da v0.5.0 havia um único `dist/index.js` com
+o CSS injetado, e quem importava o pacote num executor de teste em Node sem
+processamento de CSS (Vitest/Jest em ambiente Node puro, por exemplo)
+recebia `TypeError: Unknown file extension ".css"` na subida — as duas
+variantes existem para que nenhum consumidor precise contornar isso.
+
+⚠️ Os campos legados `main` e `module` apontam para a variante **com** o CSS, de
+propósito. Ferramenta antiga que ignore `exports` e caia neles recebe o estilo;
+se por acaso for um executor Node, estoura na hora — alto e visível. O contrário
+(apontar para a variante sem CSS) devolveria a tela desmontada em silêncio, que é
+o defeito que esta versão existe para fechar.
 
 ### `FamilyHeader`
 

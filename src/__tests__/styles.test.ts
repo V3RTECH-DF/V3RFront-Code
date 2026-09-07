@@ -28,7 +28,7 @@ describe('estilo do pacote (contrato §5)', () => {
 describe('cor de destaque (contrato §4)', () => {
   const activeBlockMatch = css.match(/\.v3r-nav__item--active\s*{([^}]*)}/)
   const activeBlock = activeBlockMatch?.[1] ?? ''
-  const inactiveBlockMatch = css.match(/\.v3r-nav__item\s*{([^}]*)}/)
+  const inactiveBlockMatch = css.match(/^\.v3r-nav__item\s*{([^}]*)}/m)
   const inactiveBlock = inactiveBlockMatch?.[1] ?? ''
 
   it('o traço de base do item ativo lê --v3r-accent, com fallback neutro em hex', () => {
@@ -67,6 +67,135 @@ describe('cor de destaque (contrato §4)', () => {
 
     // "ao menos tão escuro" = luminância <= à dos inativos, nunca mais claro.
     expect(luminance(activeColorMatch![1] ?? '')).toBeLessThanOrEqual(luminance(inactiveColorMatch![1] ?? ''))
+  })
+})
+
+describe('altura real das barras de navegação (contrato §2)', () => {
+  // `getComputedStyle` em jsdom não implementa especificidade nem calcula
+  // layout — não serve para medir altura resultante. A altura real precisa
+  // ser somada a partir das próprias declarações do CSS, do mesmo jeito que
+  // o consumidor fez para medir o defeito original: padding da barra +
+  // altura do item (linha + padding-bottom + traço) + borda da barra.
+  function px(value: string | undefined): number {
+    if (!value) throw new Error('valor CSS ausente')
+    const match = value.match(/^(-?\d+(?:\.\d+)?)px$/)
+    if (!match) throw new Error(`valor não é um px simples: ${value}`)
+    return Number(match[1])
+  }
+
+  function declarationsOf(selectorPattern: RegExp): Record<string, string> {
+    const match = css.match(selectorPattern)
+    if (!match) throw new Error(`seletor não encontrado: ${selectorPattern}`)
+    const block = match[1] ?? ''
+    const decls: Record<string, string> = {}
+    for (const rawDecl of block.split(';')) {
+      const decl = rawDecl.trim()
+      if (!decl) continue
+      const [prop, ...rest] = decl.split(':')
+      if (!prop || rest.length === 0) continue
+      decls[prop.trim()] = rest.join(':').trim()
+    }
+    return decls
+  }
+
+  // Padding vertical total (topo + base) de uma declaração `padding` no
+  // formato "vertical horizontal".
+  function verticalPaddingOf(decls: Record<string, string>): number {
+    const padding = decls['padding']
+    if (!padding) throw new Error('padding ausente')
+    const [vertical] = padding.trim().split(/\s+/)
+    return px(vertical) * 2
+  }
+
+  function itemContentHeight(itemDecls: Record<string, string>, overridePaddingBottom?: number): number {
+    const lineHeightRaw = itemDecls['line-height']
+    if (lineHeightRaw !== '1') throw new Error(`premissa quebrada: line-height esperado "1", achou "${lineHeightRaw}"`)
+    const fontSizeMatch = itemDecls['font-size']
+    // O item não declara a própria font-size — herda da barra (contrato:
+    // densidade acompanha a barra). A altura de linha com line-height:1 é
+    // igual ao font-size herdado.
+    if (fontSizeMatch) throw new Error('premissa quebrada: item declarando a própria font-size')
+
+    const itemPadding = itemDecls['padding']
+    if (!itemPadding) throw new Error('padding do item ausente')
+    const paddingBottom = overridePaddingBottom ?? px(itemPadding.trim().split(/\s+/).pop())
+
+    const itemBorder = itemDecls['border-bottom']
+    if (!itemBorder) throw new Error('border-bottom do item ausente')
+    const border = px(itemBorder.trim().split(/\s+/)[0])
+
+    return paddingBottom + border
+  }
+
+  const barBorder = 1 // border-bottom: 1px solid, comum às três barras.
+
+  it('a barra de grupos mede 40px de conteúdo + 1px de borda (contrato: 40px)', () => {
+    const barDecls = declarationsOf(/\.v3r-nav-groups,\s*\n?\.v3r-nav-flat\s*{([^}]*)}/)
+    const itemDecls = declarationsOf(/^\.v3r-nav__item\s*{([^}]*)}/m)
+
+    const fontSize = px(barDecls['font-size'])
+    const itemExtra = itemContentHeight(itemDecls)
+    const contentHeight = verticalPaddingOf(barDecls) + fontSize + itemExtra
+    const totalHeight = contentHeight + barBorder
+
+    expect(fontSize).toBe(14)
+    expect(contentHeight).toBe(40)
+    expect(totalHeight).toBe(41)
+  })
+
+  it('a barra de abas mede 36px de conteúdo + 1px de borda (contrato: 36px, não 40px)', () => {
+    const barDecls = declarationsOf(/\.v3r-nav-tabs\s*{([^}]*)}/)
+    const baseItemDecls = declarationsOf(/^\.v3r-nav__item\s*{([^}]*)}/m)
+    const tabItemOverrideDecls = declarationsOf(/\.v3r-nav-tabs \.v3r-nav__item\s*{([^}]*)}/)
+
+    const fontSize = px(barDecls['font-size'])
+    const overridePaddingBottom = px(tabItemOverrideDecls['padding-bottom'])
+    const itemExtra = itemContentHeight(baseItemDecls, overridePaddingBottom)
+    const contentHeight = verticalPaddingOf(barDecls) + fontSize + itemExtra
+    const totalHeight = contentHeight + barBorder
+
+    expect(fontSize).toBe(13)
+    // Controle negativo: a conta ingênua (sem o override de
+    // `padding-bottom` do item de aba) reproduz o defeito medido — 40px,
+    // não 36. Prova que o override é o que fecha a régua do contrato, não
+    // um acaso de arredondamento.
+    const naiveItemExtra = itemContentHeight(baseItemDecls)
+    const naiveContentHeight = verticalPaddingOf(barDecls) + fontSize + naiveItemExtra
+    expect(naiveContentHeight).toBe(39)
+    expect(naiveContentHeight + barBorder).toBe(40)
+
+    expect(contentHeight).toBe(36)
+    expect(totalHeight).toBe(37)
+  })
+
+  it('o traço do item ativo continua com 2px', () => {
+    const activeBlockMatch = css.match(/\.v3r-nav__item--active\s*{([^}]*)}/)
+    expect(activeBlockMatch).not.toBeNull()
+    const activeBlock = activeBlockMatch?.[1] ?? ''
+    const borderMatch = activeBlock.match(/border-bottom-color:\s*var\(--v3r-accent,[^)]*\)/)
+    expect(borderMatch).not.toBeNull()
+
+    const baseItemDecls = declarationsOf(/^\.v3r-nav__item\s*{([^}]*)}/m)
+    const baseItemBorder = baseItemDecls['border-bottom']
+    if (!baseItemBorder) throw new Error('border-bottom do item ausente')
+    const border = px(baseItemBorder.trim().split(/\s+/)[0])
+    expect(border).toBe(2)
+  })
+
+  it('a barra de grupos continua visivelmente mais alta que a de abas', () => {
+    const groupsBarDecls = declarationsOf(/\.v3r-nav-groups,\s*\n?\.v3r-nav-flat\s*{([^}]*)}/)
+    const tabsBarDecls = declarationsOf(/\.v3r-nav-tabs\s*{([^}]*)}/)
+    const baseItemDecls = declarationsOf(/^\.v3r-nav__item\s*{([^}]*)}/m)
+    const tabItemOverrideDecls = declarationsOf(/\.v3r-nav-tabs \.v3r-nav__item\s*{([^}]*)}/)
+
+    const groupsHeight =
+      verticalPaddingOf(groupsBarDecls) + px(groupsBarDecls['font-size']) + itemContentHeight(baseItemDecls)
+    const tabsHeight =
+      verticalPaddingOf(tabsBarDecls) +
+      px(tabsBarDecls['font-size']) +
+      itemContentHeight(baseItemDecls, px(tabItemOverrideDecls['padding-bottom']))
+
+    expect(groupsHeight).toBeGreaterThan(tabsHeight)
   })
 })
 
