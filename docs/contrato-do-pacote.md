@@ -210,3 +210,42 @@ Sendo a barra do topo da tela, ela tem o tamanho da barra do topo em toda a
 família; o contrário faria dois produtos da mesma casa exibirem navegação
 principal de tamanhos diferentes — exatamente o que a peça compartilhada
 existe para impedir.
+
+## 12. Guarda de rota no cliente — `canOpen` (a partir da v0.2.0)
+
+Medido na adoção do RIT360 Flow (06/09/2026): plugin que roteia no cliente —
+painel numa tela só, rota depois do `#`, que **nunca chega ao servidor** — não
+é protegido pela camada 1 da guarda do WordPress. Nesse desenho, a conferência
+do roteador **é a única guarda daquelas rotas**.
+
+```ts
+type AccessMap = Record<string, boolean>
+
+function canOpen(map: AccessMap | null | undefined, slug: string): boolean
+```
+
+`AccessMap` é o formato exato em que `V3R\Core\Admin\Nav\Navigation::accessMap()`
+entrega o mapa de acesso: um slug de tela para um booleano dizendo se a pessoa
+logada pode abri-la.
+
+A regra:
+
+- slug presente no mapa → devolve o valor do mapa;
+- **slug ausente do mapa → nega.** Desconhecido é negado.
+- mapa ausente, nulo ou não-objeto → **nega**, sem lançar exceção.
+
+É a mesma decisão que a biblioteca PHP já toma (`Navigation::canView()`
+responde negativo para tela desconhecida). O custo do erro é assimétrico:
+falhar fechado custa uma tela que não abre até alguém declará-la, visível na
+hora; falhar aberto custa uma tela de configuração aberta para quem não devia,
+e ninguém percebe.
+
+⚠️ `canOpen` lê **o mapa de acesso**, nunca a árvore de navegação (`NavTree`,
+contrato §6): uma tela pode estar autorizada no mapa sem aparecer em nenhum
+grupo da navegação (tela oculta, acessível só por link direto), e precisa
+continuar abrindo. Guarda que checar presença em `NavTree` em vez de em
+`AccessMap` recusaria essa tela por engano — é o erro que a próxima pessoa
+cometeria de boa-fé.
+
+Pura: mesma entrada, mesma saída, sem efeito nenhum. Exportada junto com o
+tipo `AccessMap` de `src/index.ts`.
