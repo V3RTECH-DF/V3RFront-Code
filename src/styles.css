@@ -74,8 +74,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  height: 32px;
-  max-width: 160px;
+  height: 40px;
+  max-width: 200px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -94,7 +94,7 @@
  */
 .v3r-header__divider {
   width: 1px;
-  height: 36px; /* um fio mais alto que o logo (32px): separa sem competir */
+  height: 40px; /* a mesma altura do logo: separa sem virar traco */
   background: #e2e2e2;
   flex-shrink: 0;
 }

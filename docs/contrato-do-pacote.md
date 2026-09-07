@@ -25,8 +25,8 @@ deliberadamente diferente em cada um.
 | **Total antes do conteúdo** | **140px** | |
 
 Espaçamento entre itens: 24px na barra de grupos, 20px na de abas. Estado ativo:
-traço de 2px na base do item, na cor de destaque. Logo com **32px de altura**
-(largura livre, teto para marca muito comprida), divisor vertical de 1px por 36px.
+traço de 2px na base do item, na cor de destaque. Logo com **40px de altura**
+(largura livre, teto para marca muito comprida), divisor vertical de 1px por 40px.
 Largura cheia, colada ao topo — **não** cartão centralizado.
 
 Descartadas: compacta (118px) e ampla (168px). A ampla consome mais de um quarto
@@ -155,7 +155,7 @@ marca). `version` é só o número — o componente antepõe o "v".
 
 **O pacote dimensiona o logo** — o consumidor passa a marca (imagem ou SVG,
 em qualquer formato e proporção) e não precisa, nem deve, dar tamanho a ela.
-O espaço do logo restringe altura (32px), não largura: a marca ocupa a altura
+O espaço do logo restringe altura (40px), não largura: a marca ocupa a altura
 do espaço mantendo a própria proporção, com um teto de largura para uma marca
 muito comprida não empurrar o título.
 

@@ -57,12 +57,12 @@ describe('espaço do logo do cabeçalho (contrato §2/§11)', () => {
   const logoBlockMatch = css.match(/\.v3r-header__logo\s*{([^}]*)}/)
   const logoBlock = logoBlockMatch ? logoBlockMatch[1] : ''
 
-  it('restringe altura (32px), não é uma caixa quadrada', () => {
+  it('restringe altura (40px), não é uma caixa quadrada', () => {
     expect(logoBlockMatch).not.toBeNull()
-    expect(logoBlock).toMatch(/height:\s*32px/)
+    expect(logoBlock).toMatch(/height:\s*40px/)
     // Controle negativo: não pode haver `width` fixo casando a altura —
     // isso reintroduziria a caixa quadrada que é o próprio defeito.
-    expect(logoBlock).not.toMatch(/width:\s*32px/)
+    expect(logoBlock).not.toMatch(/width:\s*40px/)
     expect(logoBlock).not.toMatch(/width:\s*28px/)
   })
 
@@ -84,10 +84,10 @@ describe('espaço do logo do cabeçalho (contrato §2/§11)', () => {
 })
 
 describe('divisor do cabeçalho acompanha o logo (contrato §2)', () => {
-  it('tem 36px — um fio mais alto que o logo de 32px', () => {
+  it('tem 40px — a mesma altura do logo', () => {
     const dividerBlockMatch = css.match(/\.v3r-header__divider\s*{([^}]*)}/)
     expect(dividerBlockMatch).not.toBeNull()
 
-    expect(dividerBlockMatch![1]).toMatch(/height:\s*36px\s*;/)
+    expect(dividerBlockMatch![1]).toMatch(/height:\s*40px\s*;/)
   })
 })
