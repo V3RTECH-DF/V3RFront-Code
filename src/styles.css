@@ -58,18 +58,43 @@
   min-width: 0;
 }
 
+/*
+ * O espaço do logo restringe ALTURA, não é uma caixa quadrada: marca com
+ * texto ao lado do símbolo (formato horizontal, o caso mais comum na
+ * família) não cabe num quadrado. `max-width` é só um teto para uma marca
+ * muito comprida não empurrar o título (ver `.v3r-header__title`, que
+ * trunca, mas o logo não deve consumir o espaço todo antes disso).
+ *
+ * O pacote dimensiona o CONTEÚDO, não só o espaço: `img`/`svg` passado como
+ * logo ocupa a altura do espaço e mantém a proporção, seja qual for o
+ * tamanho natural do arquivo — é o consumidor que não deve (nem precisa)
+ * dar tamanho à própria marca.
+ */
 .v3r-header__logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  justify-content: flex-start;
+  height: 32px;
+  max-width: 160px;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
+.v3r-header__logo img,
+.v3r-header__logo svg {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/*
+ * O divisor acompanha a altura nova do logo mantendo a proporção que já
+ * Um fio mais alto que o logo, para separar sem competir com ele.
+ */
 .v3r-header__divider {
   width: 1px;
-  height: 32px;
+  height: 36px; /* um fio mais alto que o logo (32px): separa sem competir */
   background: #e2e2e2;
   flex-shrink: 0;
 }

@@ -25,8 +25,9 @@ deliberadamente diferente em cada um.
 | **Total antes do conteúdo** | **140px** | |
 
 Espaçamento entre itens: 24px na barra de grupos, 20px na de abas. Estado ativo:
-traço de 2px na base do item, na cor de destaque. Logo 28px, divisor vertical de
-1px. Largura cheia, colada ao topo — **não** cartão centralizado.
+traço de 2px na base do item, na cor de destaque. Logo com **32px de altura**
+(largura livre, teto para marca muito comprida), divisor vertical de 1px por 36px.
+Largura cheia, colada ao topo — **não** cartão centralizado.
 
 Descartadas: compacta (118px) e ampla (168px). A ampla consome mais de um quarto
 da altura útil somada à barra do WordPress, e os produtos da casa são cadastros e
@@ -151,6 +152,12 @@ interface FamilyHeaderProps {
 
 Sem `logo`, o divisor vertical some junto (não faz sentido separar o nada da
 marca). `version` é só o número — o componente antepõe o "v".
+
+**O pacote dimensiona o logo** — o consumidor passa a marca (imagem ou SVG,
+em qualquer formato e proporção) e não precisa, nem deve, dar tamanho a ela.
+O espaço do logo restringe altura (32px), não largura: a marca ocupa a altura
+do espaço mantendo a própria proporção, com um teto de largura para uma marca
+muito comprida não empurrar o título.
 
 ### `FamilyNav`
 

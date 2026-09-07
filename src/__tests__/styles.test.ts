@@ -52,3 +52,42 @@ describe('fonte embarcada (contrato §3)', () => {
     expect(css).toMatch(/exo2-variable-latin\.woff2/)
   })
 })
+
+describe('espaço do logo do cabeçalho (contrato §2/§11)', () => {
+  const logoBlockMatch = css.match(/\.v3r-header__logo\s*{([^}]*)}/)
+  const logoBlock = logoBlockMatch ? logoBlockMatch[1] : ''
+
+  it('restringe altura (32px), não é uma caixa quadrada', () => {
+    expect(logoBlockMatch).not.toBeNull()
+    expect(logoBlock).toMatch(/height:\s*32px/)
+    // Controle negativo: não pode haver `width` fixo casando a altura —
+    // isso reintroduziria a caixa quadrada que é o próprio defeito.
+    expect(logoBlock).not.toMatch(/width:\s*32px/)
+    expect(logoBlock).not.toMatch(/width:\s*28px/)
+  })
+
+  it('tem um teto de largura, para uma marca muito comprida não empurrar o título', () => {
+    expect(logoBlock).toMatch(/max-width:\s*\d/)
+  })
+
+  it('dimensiona o conteúdo (img/svg) para ocupar a altura mantendo a proporção', () => {
+    const contentBlockMatch = css.match(/\.v3r-header__logo img,\s*\n?\.v3r-header__logo svg\s*{([^}]*)}/)
+    expect(contentBlockMatch).not.toBeNull()
+    const block = contentBlockMatch![1]
+
+    expect(block).toMatch(/height:\s*100%/)
+    expect(block).toMatch(/width:\s*auto/)
+    // Controle negativo: largura fixa aqui espremeria ou cortaria a marca
+    // em vez de manter a proporção natural.
+    expect(block).not.toMatch(/width:\s*\d+px/)
+  })
+})
+
+describe('divisor do cabeçalho acompanha o logo (contrato §2)', () => {
+  it('tem 36px — um fio mais alto que o logo de 32px', () => {
+    const dividerBlockMatch = css.match(/\.v3r-header__divider\s*{([^}]*)}/)
+    expect(dividerBlockMatch).not.toBeNull()
+
+    expect(dividerBlockMatch![1]).toMatch(/height:\s*36px\s*;/)
+  })
+})
