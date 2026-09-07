@@ -312,3 +312,99 @@ cometeria de boa-fé.
 
 Pura: mesma entrada, mesma saída, sem efeito nenhum. Exportada junto com o
 tipo `AccessMap` de `src/index.ts`.
+
+## 13. Ferramenta de build — `@v3rtech/v3r-front/vite` (a partir da v0.6.0)
+
+Correção da cascata do wp-admin, hoje reimplementada em cada plugin, movida
+para peça instalável — subcaminho **separado** da entrada dos componentes,
+porque é ferramenta de build em JavaScript (Vite/PostCSS), não peça de
+interface: importar `@v3rtech/v3r-front` para desenhar a navegação nunca
+carrega Vite nem PostCSS, e importar `@v3rtech/v3r-front/vite` no
+`vite.config.ts` do plugin nunca carrega React.
+
+### O defeito
+
+O Tailwind 4 emite tudo dentro de `@layer`, e na cascata do CSS **a origem
+sem camada vence a origem em camada antes de a especificidade ser
+comparada** — o CSS do wp-admin não usa camadas, então ele derrota o CSS do
+plugin mesmo quando o plugin "parece" mais específico. Corrigir exige
+desembrulhar as camadas do bundle final e ancorar as regras no id da raiz da
+aplicação do plugin, elevando a especificidade o suficiente para vencer
+qualquer seletor de atributo/classe único que o wp-admin declare.
+
+### As duas responsabilidades, e por que nenhuma resolve sozinha
+
+1. **Ancorar o CSS do próprio plugin.** `base` e `utilities` (Tailwind) são
+   desembrulhados de `@layer` **e** re-escopados no id da raiz. `theme`
+   (variáveis `:root`/`:host`) e `properties` (reset de `--tw-*`) são só
+   desembrulhados, **sem** re-escopo — re-escopá-los quebraria a herança
+   (`:root` nunca casa como descendente de um id).
+2. **Ancorar o CSS deste pacote na mesma raiz.** Consequência direta da
+   primeira: uma vez que o plugin ancora o próprio reset no id, esse reset
+   passa a vencer também o CSS do pacote compartilhado (`.v3r-nav__item` e
+   companhia), que é publicado sem camada e sem escopo. O sintoma medido ao
+   vivo (V3RLGPD): o componente de navegação aparece, monta, e só não marca
+   o estado ativo — o traço de 2px na base do item some, porque
+   `#raiz *`/`#raiz button` (1,0,0)/(1,0,1), ancorados para vencer o
+   wp-admin, agora também vencem `.v3r-nav__item` (0,1,0), sem escopo. A
+   correção dá ao CSS do pacote a MESMA âncora: uma vez em `#raiz
+   .v3r-nav__item` (1,1,0), ele volta a vencer o reset ancorado pela regra
+   normal da cascata — mais específico ganha.
+
+### Por que o filtro é por caminho de módulo, e não por classe/propriedade
+
+A responsabilidade 2 intercepta **só** o CSS cujo caminho do módulo resolvido
+contém `/@v3rtech/v3r-front/` — nunca por nome de classe ou de propriedade.
+Uma lista de propriedades descolaria na primeira versão nova do pacote, em
+silêncio. E o adversário nem sempre é o Tailwind: no V3RLGPD, quem apagava o
+pacote num dos bundles era um reset de elemento escrito à mão pelo próprio
+plugin (`button { border: 0; }` ancorado), não o preflight do Tailwind — uma
+ferramenta que só soubesse desembrulhar camadas não teria corrigido aquele
+caso. Filtrando por caminho, a correção funciona **sem saber quem é o
+adversário**: qualquer CSS ancorado na mesma raiz que vença por
+especificidade é, por definição, coberto.
+
+### O que a ferramenta NÃO toca
+
+**Nenhuma folha do próprio plugin** é alterada pela parte que ancora o pacote
+(responsabilidade 2) — ela só intercepta o módulo cujo caminho é o do pacote
+compartilhado. E CSS de terceiro qualquer (outra biblioteca em
+`node_modules`, sem `@layer` e fora do caminho do pacote) atravessa as duas
+responsabilidades sem alteração: a responsabilidade 1 só reescreve o que
+estiver dentro de `@layer base/components/utilities`; a responsabilidade 2 só
+o que vier do caminho do pacote.
+
+### Uso — uma chamada resolve as duas
+
+```ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { cascadeFix } from '@v3rtech/v3r-front/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss(), ...cascadeFix('#meu-plugin-app')],
+})
+```
+
+`scopeId` é o id da raiz da aplicação — o mesmo elemento em que
+`--v3r-accent` é declarada (contrato §4). **A mesma peça serve mais de um
+bundle do mesmo plugin**: um plugin com painel e área pública em builds
+separados (dois `vite.config.ts`, duas raízes) chama `cascadeFix` uma vez
+para cada `vite.config.ts`, passando o id de cada raiz — cada chamada ancora
+só naquela raiz, sem as duas se confundirem.
+
+⚠️ `cascadeFix` cobre o caso comum (bundle único, que importa e re-escopa o
+CSS do pacote). Um bundle que **não** importa `@v3rtech/v3r-front` não
+precisa da responsabilidade 2 — as peças `unwrapCssLayersPlugin` e
+`rescopeVendorCssPlugin` também são exportadas individualmente para quem
+precisar compor de outro jeito.
+
+### Proteção do artefato de componentes
+
+`scripts/verify-dist.mjs` reprova o build se `dist/index.js` ou
+`dist/index.browser.js` (a entrada dos componentes) contiverem qualquer
+rastro da ferramenta de build — `postcss` ou os nomes dos plugins Vite da
+correção da cascata. `@v3rtech/v3r-front/vite` é gerado por uma passada de
+build **separada** (`vite.config.tooling.ts`, entrada `src/vite/index.ts`),
+com `vite` e `postcss` externos.

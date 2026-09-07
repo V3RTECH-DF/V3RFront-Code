@@ -30,6 +30,18 @@ for (const file of requiredFiles) {
   }
 }
 
+// Subcaminho `@v3rtech/v3r-front/vite` (ferramenta de build) — artefato
+// completamente separado do dos componentes.
+const viteToolingFiles = ['vite/index.js', 'vite/index.d.ts']
+for (const file of viteToolingFiles) {
+  const path = resolve(dist, file)
+  if (!existsSync(path)) {
+    fail(`${file} não existe em dist/`)
+  } else {
+    ok(`${file} existe`)
+  }
+}
+
 const jsPath = resolve(dist, 'index.js')
 const browserJsPath = resolve(dist, 'index.browser.js')
 
@@ -103,6 +115,24 @@ if (existsSync(cssPath)) {
     ok('dist/v3r-front.css embarca a fonte como base64')
   }
 }
+
+// A ferramenta de build (`@v3rtech/v3r-front/vite`, PostCSS incluso) não
+// pode vazar para o artefato dos componentes — é o próprio critério de
+// aceite que justifica os dois serem entradas de build separadas.
+function checkNoBuildToolingLeak(path, label) {
+  if (!existsSync(path)) return
+  const js = readFileSync(path, 'utf8')
+  const markers = ['postcss', 'v3r-front-unwrap-css-layers', 'v3r-front-rescope-vendor-css']
+  const found = markers.filter((marker) => js.toLowerCase().includes(marker.toLowerCase()))
+  if (found.length > 0) {
+    fail(`${label} contém rastro da ferramenta de build (marcadores: ${found.join(', ')})`)
+  } else {
+    ok(`${label} não contém rastro da ferramenta de build (postcss/plugins de cascata)`)
+  }
+}
+
+checkNoBuildToolingLeak(jsPath, 'dist/index.js')
+checkNoBuildToolingLeak(browserJsPath, 'dist/index.browser.js')
 
 const dtsPath = resolve(dist, 'index.d.ts')
 if (existsSync(dtsPath)) {
