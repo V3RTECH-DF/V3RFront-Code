@@ -115,6 +115,28 @@ vigor, e "tem reserva" parecia "a reserva é usada". A defesa que funcionou lá
 foi exatamente esta: cor só é emitida se casar com o formato esperado, opções
 saem de um mapa fechado, e o bloco só é escrito se sobrou algum valor.
 
+### Como auditar as reservas que você já tem
+
+**A régua:** para cada reserva declarada, uma das duas tem de ser verdade **e
+estar explícita** — ou a variável *pode* faltar, e o comentário diz **quando**;
+ou ela *nunca* falta, e a reserva sai, ou fica marcada como documentação do
+valor esperado, **nunca parecendo proteção**.
+
+**O que decide entre as duas não está no `var()`.** Está em **quem escreve a
+variável, e se escreve sempre ou às vezes** — a informação que resolve mora
+sempre do outro lado.
+
+⚠️ **O cuidado, sem o qual a régua vira estrago: não é para sair apagando
+reserva.** Onde a variável de fato pode faltar, a reserva é o que segura a tela
+— apagar troca dívida de leitura por defeito real. Reserva cuja ausência é o
+caso **comum** é a mais legítima que existe, e é a que mais parece supérflua.
+
+⚠️ **E a validação, que é onde quase todo mundo erra:** para cada reserva
+mantida, prove que ela **entra em vigor** no cenário de ausência. Provar que o
+valor final está certo **não serve** — passa igual se a reserva for decoração.
+
+Régua, cuidado e validação vieram da adoção no V3RLGPD (`V3RLGPD-Code#106`).
+
 ## 5. Estilo próprio, sem depender do hospedeiro
 
 O CSS do pacote é **próprio, sem `@layer`, com nomes de classe próprios**, e não
