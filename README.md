@@ -40,8 +40,12 @@ da branch principal.
 
 ```tsx
 import { FamilyHeader, FamilyNav, AdminNotices } from '@v3rtech/v3r-front'
-import '@v3rtech/v3r-front/styles.css'
 ```
+
+O estilo vem junto do componente — não é preciso um segundo import. Quem
+quiser controlar o carregamento do CSS separadamente pode importar
+`@v3rtech/v3r-front/styles.css` explicitamente; importar os dois não duplica
+nada.
 
 O contrato completo — propriedades, forma da árvore, cor de destaque e a régua
 de tamanhos — está em `docs/contrato-do-pacote.md`.

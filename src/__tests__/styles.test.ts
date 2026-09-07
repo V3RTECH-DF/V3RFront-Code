@@ -27,9 +27,9 @@ describe('estilo do pacote (contrato §5)', () => {
 
 describe('cor de destaque (contrato §4)', () => {
   const activeBlockMatch = css.match(/\.v3r-nav__item--active\s*{([^}]*)}/)
-  const activeBlock = activeBlockMatch ? activeBlockMatch[1] : ''
+  const activeBlock = activeBlockMatch?.[1] ?? ''
   const inactiveBlockMatch = css.match(/\.v3r-nav__item\s*{([^}]*)}/)
-  const inactiveBlock = inactiveBlockMatch ? inactiveBlockMatch[1] : ''
+  const inactiveBlock = inactiveBlockMatch?.[1] ?? ''
 
   it('o traço de base do item ativo lê --v3r-accent, com fallback neutro em hex', () => {
     expect(activeBlockMatch).not.toBeNull()
@@ -66,7 +66,7 @@ describe('cor de destaque (contrato §4)', () => {
     }
 
     // "ao menos tão escuro" = luminância <= à dos inativos, nunca mais claro.
-    expect(luminance(activeColorMatch![1])).toBeLessThanOrEqual(luminance(inactiveColorMatch![1]))
+    expect(luminance(activeColorMatch![1] ?? '')).toBeLessThanOrEqual(luminance(inactiveColorMatch![1] ?? ''))
   })
 })
 

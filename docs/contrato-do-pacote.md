@@ -168,6 +168,13 @@ diretamente — quem embarca `import './styles.css'` (side-effect, contrato §5)
 livres de qualquer referência a arquivo de CSS, para o `.d.ts` publicado não
 apontar para um módulo que não existe em `dist/` sob esse nome.
 
+⚠️ **O import da folha de estilo não é mais obrigatório (a partir da
+v0.4.0).** `dist/index.js` já carrega o CSS do pacote junto — quem importa só
+os componentes recebe o estilo. Quem quiser controlar o carregamento (por
+exemplo, para adiar ou isolar o CSS) continua podendo importar
+`@v3rtech/v3r-front/styles.css` explicitamente: é o mesmo arquivo, e importar
+os dois não duplica regra nenhuma no resultado construído.
+
 ### `FamilyHeader`
 
 ```ts
