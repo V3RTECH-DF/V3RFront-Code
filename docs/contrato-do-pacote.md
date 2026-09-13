@@ -49,6 +49,22 @@ wp-admin, o que seria pior — então essa classe é a fronteira, e em tela de
 painel **não é opcional**: é parte da adoção do pacote, não um acabamento
 opcional.
 
+⚠️ **"Na raiz" significa num elemento DENTRO do contêiner que o `cascadeFix`
+recebe — nunca no próprio contêiner.** O `cascadeFix('#raiz')` (§13) reescreve
+a regra para `#raiz .v3r-typography`, que só casa com **descendente** da raiz.
+Pondo a classe no próprio `#raiz`, nada casa: cabeçalho e navegação saem em
+Exo 2 (o CSS próprio deles não depende da classe) e **o conteúdo inteiro sai na
+fonte do sistema, sem erro nenhum**. A forma certa é um `div` interno:
+
+```tsx
+<div id="meu-plugin-app">
+  <div className="v3r-typography">{/* a aplicação */}</div>
+</div>
+```
+
+Medido no wp-admin real pelo GE Associados em 12/09/2026; o V3RLGPD já usava a
+forma certa.
+
 ⚠️ **Exceção deliberada:** superfície que exibe a **identidade de uma
 organização cliente** — caso do V3RLGPD, que renderiza a gestão numa página
 pública com a marca, as cores e a fonte que a própria organização configurou —
