@@ -469,3 +469,42 @@ input[type='radio'][aria-disabled='true'] {
   opacity: 0.7;
   cursor: default;
 }
+
+/*
+ * Tamanho de celular de checkbox/radio (contrato §13, V3RCore-Code#46,
+ * regressão da v0.7.0 medida no GE Associados em 375px).
+ *
+ * O bloco acima fixa `width/height: 1rem` com a mesma especificidade que o
+ * `wp-admin/css/forms.css` usa fora da media query — mas o wp-admin também
+ * AUMENTA o controle dentro de `@media screen and (max-width: 782px)`
+ * (`width/height: 1.5625rem`, tique/ponto do `::before` proporcionais), para
+ * dar alvo de toque maior em tela estreita. O bloco desktop, sem essa
+ * segunda camada, ganha da media query do wp-admin (mesma especificidade,
+ * ordem de cascata) e prende o controle em 1rem/16px também no celular.
+ *
+ * A correção replica a MESMA media query e os MESMOS valores do wp-admin
+ * (`rescopeVendorCss` ancora esta também, igual às de cima) — cobre só
+ * largura/altura da caixa e o tamanho/margem do `::before` marcado, que é o
+ * que o wp-admin muda nesse breakpoint; os ajustes de margem restritos a
+ * `.wp-admin p`/`.widefat` continuam fora do escopo (ver "O que a peça NÃO
+ * cobre" no contrato).
+ */
+@media screen and (max-width: 782px) {
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 1.5625rem;
+    height: 1.5625rem;
+  }
+
+  input[type='checkbox']:checked::before {
+    width: 1.875rem;
+    height: 1.875rem;
+    margin: -0.1875rem -0.3125rem;
+  }
+
+  input[type='radio']:checked::before {
+    width: 0.5625rem;
+    height: 0.5625rem;
+    margin: 0.4375rem;
+  }
+}

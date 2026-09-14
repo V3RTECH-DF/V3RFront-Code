@@ -508,6 +508,26 @@ de checkbox/radio (`src/admin/src/index.css` no GE,
 `src/admin/src/front/front.css` no V3RLGPD) podem ser removidos. Ver "O que a
 peça NÃO cobre" abaixo antes de remover.
 
+### Tamanho em tela estreita (a partir da v0.7.1)
+
+A v0.7.0 fixava `width/height: 1rem` do controle com a MESMA especificidade
+usada fora de qualquer media query — mas o próprio `wp-admin/css/forms.css`
+também **aumenta** checkbox e radio dentro de `@media screen and
+(max-width: 782px)`, para dar alvo de toque maior em celular
+(`width/height: 1.5625rem`, e o tique/ponto do `::before` marcado
+proporcionais). Sem essa segunda camada, o bloco desktop ganhava da media
+query do wp-admin pela ordem normal da cascata (mesma especificidade) e
+prendia o controle em 16px também no celular — regressão medida no GE
+Associados em 375px (`V3RCore-Code#46`).
+
+`src/styles.css` replica agora a MESMA media query e os MESMOS valores do
+wp-admin dentro dela — largura/altura da caixa e tamanho/margem do `::before`
+marcado, que é o que o wp-admin muda nesse breakpoint. `rescopeVendorCss`
+ancora essas regras na mesma raiz, igual às de cima. Fora do breakpoint
+(desktop), nada muda em relação à v0.7.0. Continuam fora do escopo os ajustes
+de margem restritos a `.wp-admin p`/`.widefat` (mesma exceção já registrada em
+"O que a peça NÃO cobre").
+
 **O que a peça NÃO cobre, e por quê:** o GE e o V3RLGPD desenham o PRÓPRIO
 tique/ponto (imagem de fundo com a cor da marca de cada produto, dimensionada
 pela caixa), porque os dois já reduzem `border-radius`/tamanho do controle
