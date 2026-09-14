@@ -311,7 +311,7 @@
 
 /*
  * Restauração do desenho nativo do `.notice`/`.updated`/`.error` do wp-admin
- * (contrato §13, V3RCore-Code#46).
+ * (contrato §13, V3RCore-Code#46 e #49).
  *
  * O reset do `cascadeFix`, ancorado no id da raiz para vencer o CSS do
  * wp-admin (`#raiz *{border:0 solid;margin:0;padding:0}`), também vence o
@@ -322,17 +322,29 @@
  * faixa colorida (o `background`/`background-color` da variante não é
  * tocado pelo reset) com o texto colado, sem borda nem respiro.
  *
- * A correção replica aqui os valores exatos de `wp-admin/css/common.css`.
+ * A correção replica aqui os valores exatos de `wp-admin/css/common.css` —
+ * mas SÓ quando a raiz está dentro do wp-admin (V3RCore-Code#49): as regras
+ * não têm como saber, olhando só para o próprio seletor, que `forms.css`/
+ * `common.css` não existem fora dele — e sem essa condição elas IMPÕEM o
+ * desenho do wp-admin numa superfície onde ele nunca existiu (medido no
+ * V3RLGPD, página pública de gestão). `:where(body.wp-admin)` é o ancestral
+ * que o WordPress só põe no `body` do painel — nunca em página pública — e
+ * `:where()` soma ZERO de especificidade, então a condição não muda o
+ * patamar que um consumidor precisa vencer para sobrepor a marca (contrato
+ * §13, "O que a peça NÃO cobre").
+ *
  * `rescopeVendorCss` (responsabilidade 2 do `cascadeFix`) varre TODA regra
- * deste arquivo — inclusive estas —, então elas saem ancoradas na MESMA
- * raiz (`${scopeId} .v3r-admin-notices > .notice`, com ID) e voltam a vencer
- * o reset ancorado pela regra normal da cascata: mais específico ganha.
- * Em quem não usa o `cascadeFix`, ficam sem escopo e replicam exatamente o
- * que o wp-admin já aplica — nenhum efeito observável muda.
+ * deste arquivo — inclusive estas —, então elas saem ancoradas na MESMA raiz
+ * (`:where(body.wp-admin) ${scopeId} .v3r-admin-notices > .notice`, com ID)
+ * e voltam a vencer o reset ancorado pela regra normal da cascata: mais
+ * específico ganha. Em quem não usa o `cascadeFix`, ficam sem escopo e
+ * replicam exatamente o que o wp-admin já aplica QUANDO o `body` tiver a
+ * classe `wp-admin` — nenhum efeito observável muda dentro do wp-admin, e
+ * fora dele a condição nunca casa.
  */
-.v3r-admin-notices > .notice,
-.v3r-admin-notices > .updated,
-.v3r-admin-notices > .error {
+:where(body.wp-admin) .v3r-admin-notices > .notice,
+:where(body.wp-admin) .v3r-admin-notices > .updated,
+:where(body.wp-admin) .v3r-admin-notices > .error {
   background: #fff;
   border: none;
   border-left: 4px solid #c3c4c7;
@@ -346,7 +358,8 @@
 
 /*
  * Padding de celular do `.notice` (contrato §13, V3RCore-Code#46, mesma
- * classe de defeito do bloco de checkbox/radio abaixo).
+ * classe de defeito do bloco de checkbox/radio abaixo) — condicionado ao
+ * wp-admin junto com o bloco acima (V3RCore-Code#49).
  *
  * O bloco acima fixa `padding: 8px 12px` com a mesma especificidade usada
  * fora de media query — mas o `wp-admin/css/common.css` também REDUZ o
@@ -358,16 +371,16 @@
  * pacote, contrato §8) não muda com a largura e por isso não entra aqui.
  */
 @media screen and (max-width: 782px) {
-  .v3r-admin-notices > .notice,
-  .v3r-admin-notices > .updated,
-  .v3r-admin-notices > .error {
+  :where(body.wp-admin) .v3r-admin-notices > .notice,
+  :where(body.wp-admin) .v3r-admin-notices > .updated,
+  :where(body.wp-admin) .v3r-admin-notices > .error {
     padding: 5px 10px;
   }
 }
 
-.v3r-admin-notices > .notice p,
-.v3r-admin-notices > .updated p,
-.v3r-admin-notices > .error p {
+:where(body.wp-admin) .v3r-admin-notices > .notice p,
+:where(body.wp-admin) .v3r-admin-notices > .updated p,
+:where(body.wp-admin) .v3r-admin-notices > .error p {
   margin: 0.5em 0;
   padding: 0;
   font-size: 13px;
@@ -375,24 +388,24 @@
   color: #1e1e1e;
 }
 
-.v3r-admin-notices > .notice-success,
-.v3r-admin-notices > .updated {
+:where(body.wp-admin) .v3r-admin-notices > .notice-success,
+:where(body.wp-admin) .v3r-admin-notices > .updated {
   border-left-color: #4ab866;
   background-color: #eff9f1;
 }
 
-.v3r-admin-notices > .notice-warning {
+:where(body.wp-admin) .v3r-admin-notices > .notice-warning {
   border-left-color: #f0b849;
   background-color: #fef8ee;
 }
 
-.v3r-admin-notices > .notice-error,
-.v3r-admin-notices > .error {
+:where(body.wp-admin) .v3r-admin-notices > .notice-error,
+:where(body.wp-admin) .v3r-admin-notices > .error {
   border-left-color: #cc1818;
   background-color: #fcf0f0;
 }
 
-.v3r-admin-notices > .notice-info {
+:where(body.wp-admin) .v3r-admin-notices > .notice-info {
   border-left-color: #3858e9;
   background-color: #fff;
 }
@@ -403,7 +416,7 @@
 
 /*
  * Restauração do desenho nativo de checkbox/radio do wp-admin (contrato §13,
- * V3RCore-Code#46).
+ * V3RCore-Code#46 e #49).
  *
  * Mesmo defeito do bloco acima, noutro alvo: `input[type="checkbox"],
  * input[type="radio"]` do wp-admin (`wp-admin/css/forms.css`) tem
@@ -421,11 +434,19 @@
  * (a margem assimétrica `-0.25rem 0.25rem 0 0`, que é o próprio hack do
  * wp-admin para alinhar o controle com o texto vizinho).
  *
- * Mesma técnica do bloco de avisos: `rescopeVendorCss` varre este arquivo
- * inteiro e ancora estas regras na raiz do consumidor, com ID — e por isso
- * elas voltam a vencer o reset ancorado. Em quem não usa o `cascadeFix`,
- * ficam sem escopo e replicam exatamente o wp-admin: nenhum efeito
- * observável muda.
+ * Como o bloco de avisos, tudo aqui é condicionado a `:where(body.wp-admin)`
+ * (V3RCore-Code#49): sem `forms.css`, a réplica deixa de restaurar e passa a
+ * IMPOR o desenho do wp-admin numa superfície onde ele nunca existiu — bug
+ * medido no V3RLGPD (checkbox/radio marcados saindo azuis do wp-admin numa
+ * página pública). `:where()` não soma especificidade, então o patamar que
+ * um consumidor precisa vencer para sobrepor a marca não muda.
+ *
+ * `rescopeVendorCss` varre este arquivo inteiro e ancora estas regras na
+ * raiz do consumidor, com ID — e por isso elas voltam a vencer o reset
+ * ancorado. Em quem não usa o `cascadeFix`, ficam sem escopo e replicam
+ * exatamente o wp-admin QUANDO o `body` tiver a classe `wp-admin`: nenhum
+ * efeito observável muda dentro do wp-admin, e fora dele a condição nunca
+ * casa.
  *
  * `flex-shrink: 0`/`min-height` (a partir da v0.7.2, V3RCore-Code#46): o
  * `wp-admin/css/forms.css` real nunca declarou isso, porque nas telas
@@ -437,8 +458,8 @@
  * 19×25 em 375px). Fora de flex, `width/height` já bastava e continua
  * bastando — nada muda nesse caso.
  */
-input[type='checkbox'],
-input[type='radio'] {
+:where(body.wp-admin) input[type='checkbox'],
+:where(body.wp-admin) input[type='radio'] {
   -webkit-appearance: none;
   border: 1px solid #1e1e1e;
   border-radius: 2px;
@@ -460,7 +481,7 @@ input[type='radio'] {
   transition: 0.05s border-color ease-in-out;
 }
 
-input[type='radio'] {
+:where(body.wp-admin) input[type='radio'] {
   display: inline-flex;
   border-radius: 50%;
   margin-right: 0.25rem;
@@ -468,15 +489,15 @@ input[type='radio'] {
   justify-content: center;
 }
 
-input[type='checkbox']:focus,
-input[type='radio']:focus {
+:where(body.wp-admin) input[type='checkbox']:focus,
+:where(body.wp-admin) input[type='radio']:focus {
   border-color: #1e1e1e;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--wp-admin-theme-color, #2271b1);
   outline: 2px solid transparent;
 }
 
-input[type='checkbox']:checked::before,
-input[type='radio']:checked::before {
+:where(body.wp-admin) input[type='checkbox']:checked::before,
+:where(body.wp-admin) input[type='radio']:checked::before {
   float: left;
   display: inline-block;
   vertical-align: middle;
@@ -485,24 +506,24 @@ input[type='radio']:checked::before {
   -moz-osx-font-smoothing: grayscale;
 }
 
-input[type='checkbox']:checked::before {
+:where(body.wp-admin) input[type='checkbox']:checked::before {
   content: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20d%3D%27M14.83%204.89l1.34.94-5.81%208.38H9.02L5.78%209.67l1.34-1.25%202.57%202.4z%27%20fill%3D%27%23ffffff%27%2F%3E%3C%2Fsvg%3E");
   margin: -0.1875rem 0 0 -0.25rem;
   height: 1.3125rem;
   width: 1.3125rem;
 }
 
-input[type='checkbox']:checked {
+:where(body.wp-admin) input[type='checkbox']:checked {
   background: var(--wp-admin-theme-color, #2271b1);
   border-color: var(--wp-admin-theme-color, #2271b1);
 }
 
-input[type='radio']:checked {
+:where(body.wp-admin) input[type='radio']:checked {
   background: var(--wp-admin-theme-color, #2271b1);
   border-color: var(--wp-admin-theme-color, #2271b1);
 }
 
-input[type='radio']:checked::before {
+:where(body.wp-admin) input[type='radio']:checked::before {
   content: '';
   border-radius: 50%;
   width: 0.5rem;
@@ -512,19 +533,20 @@ input[type='radio']:checked::before {
   outline: 4px solid transparent;
 }
 
-input[type='checkbox']:disabled,
-input[type='checkbox'].disabled,
-input[type='checkbox'][aria-disabled='true'],
-input[type='radio']:disabled,
-input[type='radio'].disabled,
-input[type='radio'][aria-disabled='true'] {
+:where(body.wp-admin) input[type='checkbox']:disabled,
+:where(body.wp-admin) input[type='checkbox'].disabled,
+:where(body.wp-admin) input[type='checkbox'][aria-disabled='true'],
+:where(body.wp-admin) input[type='radio']:disabled,
+:where(body.wp-admin) input[type='radio'].disabled,
+:where(body.wp-admin) input[type='radio'][aria-disabled='true'] {
   opacity: 0.7;
   cursor: default;
 }
 
 /*
  * Tamanho de celular de checkbox/radio (contrato §13, V3RCore-Code#46,
- * regressão da v0.7.0 medida no GE Associados em 375px).
+ * regressão da v0.7.0 medida no GE Associados em 375px) — condicionado ao
+ * wp-admin junto com o bloco acima (V3RCore-Code#49).
  *
  * O bloco acima fixa `width/height: 1rem` com a mesma especificidade que o
  * `wp-admin/css/forms.css` usa fora da media query — mas o wp-admin também
@@ -542,19 +564,19 @@ input[type='radio'][aria-disabled='true'] {
  * cobre" no contrato).
  */
 @media screen and (max-width: 782px) {
-  input[type='checkbox'],
-  input[type='radio'] {
+  :where(body.wp-admin) input[type='checkbox'],
+  :where(body.wp-admin) input[type='radio'] {
     width: 1.5625rem;
     height: 1.5625rem;
   }
 
-  input[type='checkbox']:checked::before {
+  :where(body.wp-admin) input[type='checkbox']:checked::before {
     width: 1.875rem;
     height: 1.875rem;
     margin: -0.1875rem -0.3125rem;
   }
 
-  input[type='radio']:checked::before {
+  :where(body.wp-admin) input[type='radio']:checked::before {
     width: 0.5625rem;
     height: 0.5625rem;
     margin: 0.4375rem;

@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import postcss from 'postcss'
+import type { Rule } from 'postcss'
+import { splitTopLevelSelectors } from '../vite/rescopeSelectors'
 
 const css = readFileSync(resolve(import.meta.dirname, '../styles.css'), 'utf8')
 // O cabeçalho do arquivo explica em prosa por que `@layer` e Tailwind são
@@ -298,5 +301,53 @@ describe('título do cabeçalho quebra linha em vez de truncar abaixo de 600px (
     expect(baseTitleMatch).not.toBeNull()
     expect(baseTitleMatch![1]).toMatch(/white-space:\s*nowrap/)
     expect(baseTitleMatch![1]).toMatch(/text-overflow:\s*ellipsis/)
+  })
+})
+
+describe('restauração do wp-admin só vale dentro do wp-admin (contrato §13, V3RCore-Code#49)', () => {
+  // Prova por AST (postcss), não por regex sobre o texto: pega toda regra do
+  // arquivo cujo alvo é checkbox/radio ou o `.notice`/`.updated`/`.error` da
+  // área de avisos — os dois alvos que a v0.7.0-0.7.2 restauravam do
+  // wp-admin sem condição de superfície — e confere que TODO seletor de
+  // TODA regra desses dois grupos começa pelo marcador de ancestral
+  // `:where(body.wp-admin)`. Uma única regra esquecida faz este teste falhar
+  // (foi assim que o defeito original — regra sem condição nenhuma — teria
+  // sido pego, se o teste já existisse).
+  const root = postcss.parse(css)
+  const restoredSelectors: string[] = []
+  root.walkRules((rule: Rule) => {
+    const isCheckboxOrRadio = /input\[type=['"]?(checkbox|radio)['"]?\]/.test(rule.selector)
+    const isNotice = /\.v3r-admin-notices\s*>\s*\.(notice|updated|error)/.test(rule.selector)
+    if (isCheckboxOrRadio || isNotice) restoredSelectors.push(rule.selector)
+  })
+
+  it('encontrou as regras de restauração (controle: o arquivo tem conteúdo real)', () => {
+    expect(restoredSelectors.length).toBeGreaterThan(5)
+  })
+
+  it('toda regra de checkbox/radio/.notice está condicionada a :where(body.wp-admin)', () => {
+    const semGate: string[] = []
+    for (const selector of restoredSelectors) {
+      for (const part of splitTopLevelSelectors(selector)) {
+        if (!part.startsWith(':where(body.wp-admin)')) semGate.push(part)
+      }
+    }
+    expect(semGate).toEqual([])
+  })
+
+  it('controle negativo: a área de avisos em si e o marcador (pré-existentes, não são restauração) NÃO ganham o gate', () => {
+    const areaBlockMatch = css.match(/\/\* Área de avisos do wp-admin[^]*?\n\.v3r-admin-notices\s*{([^}]*)}/)
+    expect(areaBlockMatch).not.toBeNull()
+    const markerBlockMatch = css.match(/^\.v3r-admin-notices__marker\s*{([^}]*)}/m)
+    expect(markerBlockMatch).not.toBeNull()
+    // Nenhum dos dois blocos-alvo (o seletor que os declara) começa pelo
+    // marcador — continuam valendo em qualquer superfície, dentro ou fora
+    // do wp-admin, como sempre valeram.
+    expect(css).toMatch(/^\.v3r-admin-notices\s*{/m)
+    expect(css).toMatch(/^\.v3r-admin-notices__marker\s*{/m)
+  })
+
+  it('controle negativo: seletor que não é checkbox/radio/notice não precisa do gate (ex.: .v3r-header)', () => {
+    expect(restoredSelectors.some((s) => /\.v3r-header\b/.test(s))).toBe(false)
   })
 })

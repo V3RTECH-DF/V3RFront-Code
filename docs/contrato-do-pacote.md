@@ -290,6 +290,12 @@ pelo pacote quando o consumidor usa o `cascadeFix`** (contrato §13,
 `cascadeFix` ancora para vencer o wp-admin também apaga o desenho nativo do
 próprio aviso do wp-admin dentro da raiz.
 
+⚠️ **Essa restauração só vale DENTRO do wp-admin (a partir da v0.7.3, contrato
+§13, `V3RCore-Code#49`).** A área de avisos pode existir fora do wp-admin
+também (consumidor que monta a raiz numa página pública) — e ali não há
+`forms.css`/`common.css` para restaurar; sem a condição, a réplica impunha o
+desenho do wp-admin numa superfície onde ele nunca existiu.
+
 ## 9. Fora desta versão
 
 O **atalho de busca de tela** (`Ctrl+K`) e o **botão de menu único no celular**.
@@ -572,6 +578,44 @@ ela vale nos dois tamanhos. O V3RHelp contornava isso no próprio produto
 (`flex-shrink: 0` local); a partir desta versão o CSS local correspondente
 fica redundante e pode ser removido ao atualizar o pacote — mesmo cuidado de
 "O que a peça NÃO cobre" antes de remover.
+
+### A restauração só vale DENTRO do wp-admin (a partir da v0.7.3)
+
+A v0.7.0–0.7.2 restauravam checkbox, radio e `.notice`/`.updated`/`.error`
+sem nenhuma condição de superfície: a regra valia em **qualquer** página que
+montasse a raiz do `cascadeFix`, dentro ou fora do wp-admin. Medido no
+V3RLGPD (`V3RCore-Code#49`): a gestão do V3RLGPD roda numa página PÚBLICA do
+site (a exceção deliberada do contrato §3, "estrutura da família, identidade
+da organização") — e ali, sem `forms.css`/`common.css` do wp-admin para
+restaurar, a réplica deixava de restaurar e passava a **impor** o desenho do
+wp-admin numa superfície onde ele nunca existiu: checkbox/radio marcados
+saíam azuis do wp-admin (`var(--wp-admin-theme-color, #2271b1)`), com o tique
+SVG do wp-admin no lugar do tique próprio da marca do cliente.
+
+A correção condiciona toda regra de restauração (checkbox, radio, `.notice` e
+as duas media queries de celular) ao seletor `:where(body.wp-admin)` como
+ancestral — a classe que o WordPress só põe no `body` do painel, nunca em
+página pública. `:where()` foi escolhido por não somar especificidade
+nenhuma (sempre zero): o patamar que um consumidor precisa vencer para
+sobrepor a marca (o mesmo `#meu-app input[type="checkbox"]:checked` descrito
+em "O que a peça NÃO cobre") não muda com esta versão.
+
+⚠️ **Por que o marcador não pode ser re-escopado como qualquer outro
+seletor:** `rescopeSelector` normalmente PREPÕE o `scopeId` na frente de todo
+seletor (`${scopeId} .foo`) — a raiz do consumidor é sempre o ancestral mais
+externo que o pacote conhece. Mas aqui o ancestral mais externo de verdade é
+o `body`, que fica FORA da raiz (a raiz do `cascadeFix` mora dentro do
+`body`, nunca ao redor dele). Prepor o id normalmente produziria `${scopeId}
+:where(body.wp-admin) input[...]` — exigindo a raiz como ancestral do body,
+o que nunca acontece. `rescopeSelector` (`src/vite/rescopeSelectors.ts`)
+trata `:where(body.wp-admin)` como um marcador especial: quando um seletor
+começa por ele, o id é inserido LOGO DEPOIS do marcador, não na frente —
+`:where(body.wp-admin) ${scopeId} input[...]`. Em quem não usa o
+`cascadeFix`, a regra fica sem escopo e replica exatamente o wp-admin QUANDO
+o `body` tiver a classe `wp-admin` — nenhum efeito observável muda dentro do
+wp-admin (dentro dele a v0.7.3 é idêntica à v0.7.2: mesmos tamanhos 16/25,
+cores, tique, foco, desabilitado, `flex-shrink`, aviso e padding de celular),
+e fora dele a condição nunca casa.
 
 **O que a peça NÃO cobre, e por quê:** o GE e o V3RLGPD desenham o PRÓPRIO
 tique/ponto (imagem de fundo com a cor da marca de cada produto, dimensionada
