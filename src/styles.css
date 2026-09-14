@@ -407,6 +407,16 @@
  * elas voltam a vencer o reset ancorado. Em quem não usa o `cascadeFix`,
  * ficam sem escopo e replicam exatamente o wp-admin: nenhum efeito
  * observável muda.
+ *
+ * `flex-shrink: 0`/`min-height` (a partir da v0.7.2, V3RCore-Code#46): o
+ * `wp-admin/css/forms.css` real nunca declarou isso, porque nas telas
+ * clássicas do admin o controle não vive dentro de um item flex estreito.
+ * Nas telas React da família, sim — rótulo longo numa linha flex (V3RHelp,
+ * tela de configurações; V3REvent, detalhe do evento) encolhe o item na
+ * largura disponível, e sem `flex-shrink: 0` o `width/height: 1rem` fixado
+ * abaixo não impede o encolhimento: o controle sai oval (medido 16×25 e
+ * 19×25 em 375px). Fora de flex, `width/height` já bastava e continua
+ * bastando — nada muda nesse caso.
  */
 input[type='checkbox'],
 input[type='radio'] {
@@ -421,6 +431,8 @@ input[type='radio'] {
   height: 1rem;
   width: 1rem;
   min-width: 1rem;
+  min-height: 1rem;
+  flex-shrink: 0;
   margin: -0.25rem 0.25rem 0 0;
   padding: 0 !important;
   text-align: center;

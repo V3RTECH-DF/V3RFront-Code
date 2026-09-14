@@ -538,6 +538,26 @@ query, ancorada na mesma raiz. A margem do aviso (`12px 0 !important`,
 decisão própria do pacote, contrato §8) não é do wp-admin e não muda com a
 largura.
 
+### Controle oval dentro de linha flex estreita (a partir da v0.7.2)
+
+Defeito medido no WordPress real em dois produtos (V3RHelp, tela de
+configurações; V3REvent, detalhe do evento): checkbox/radio dentro de uma
+linha flex com rótulo longo saía oval em 375px (16×25 ou 19×25, em vez de
+25×25) — o item flex encolhia na largura disponível, porque o bloco acima
+fixa `width`/`height` mas nada impede o **encolhimento** do item quando o
+espaço falta (`flex-shrink` do elemento não tinha valor próprio declarado, e
+o padrão do navegador é `1`). Fora de uma linha flex, `width`/`height` já
+bastavam e o controle saía 25×25 corretamente — o defeito é só do contexto
+flex.
+
+`src/styles.css` agora declara `flex-shrink: 0` (e `min-height: 1rem`, a par
+do `min-width` que já existia) no mesmo bloco base, sem media query própria:
+como a propriedade não é reescrita em `@media screen and (max-width: 782px)`,
+ela vale nos dois tamanhos. O V3RHelp contornava isso no próprio produto
+(`flex-shrink: 0` local); a partir desta versão o CSS local correspondente
+fica redundante e pode ser removido ao atualizar o pacote — mesmo cuidado de
+"O que a peça NÃO cobre" antes de remover.
+
 **O que a peça NÃO cobre, e por quê:** o GE e o V3RLGPD desenham o PRÓPRIO
 tique/ponto (imagem de fundo com a cor da marca de cada produto, dimensionada
 pela caixa), porque os dois já reduzem `border-radius`/tamanho do controle
