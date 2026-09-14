@@ -249,6 +249,14 @@ O componente adota os avisos existentes, planta o marcador que falta e observa a
 tela para adotar os que aparecerem depois — os avisos são inseridos por outros
 plugins em momentos que não controlamos.
 
+**Onde a área fica (regra da família, 13/09/2026): abaixo da barra de
+navegação, logo acima do conteúdo** — nunca entre o cabeçalho e a barra.
+Aviso só aparece em algumas telas; posto acima da barra, ele a empurra para
+baixo nessas telas e a navegação muda de lugar de uma tela para a outra.
+Abaixo da barra, cabeçalho e navegação ficam sempre na mesma altura, e o aviso
+continua sendo a primeira coisa do conteúdo. Os adotantes anteriores à regra
+divergiam (V3RLGPD acima da barra, GE Associados abaixo).
+
 ## 9. Fora desta versão
 
 O **atalho de busca de tela** (`Ctrl+K`) e o **botão de menu único no celular**.
