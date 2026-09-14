@@ -44,6 +44,21 @@ seguinte — em vez de manter os 64px de uma linha só. Medido no V3RLGPD em
 chega a cobrir o fim do logo. Em 768px e acima, nada muda: 64px, uma linha,
 igual a antes desta versão.
 
+**Título quebra em vez de truncar dentro deste bloco (a partir da v0.7.2).**
+Mesmo com a marca já na própria linha, um logo largo (~170px) ainda deixa
+pouco espaço para `.v3r-header__titles` — e a regra de base de
+`.v3r-header__title` (`white-space: nowrap` + `text-overflow: ellipsis`,
+pensada para a linha única do cabeçalho largo) truncava o título mesmo
+quando ele cabia em duas linhas. Medido no RIT360 Premiado em 375px: com
+logo de ~170px e título "Configurações da Organização", o título saía
+truncado (`scrollWidth` 258 × `clientWidth` 148, uma linha de ~22px).
+Dentro de `@media (max-width: 600px)` o título agora quebra em linha
+(`white-space: normal`, `overflow-wrap: break-word` para não vazar quando
+uma palavra isolada excede o espaço disponível) em vez de truncar — o mesmo
+título passa a ocupar duas linhas (~43px) com o texto inteiro visível, e a
+versão, abaixo dele na mesma coluna, continua visível. Em 768px e acima
+nada muda: a regra de base (nowrap/ellipsis, linha única) segue valendo.
+
 ## 3. Tipografia
 
 **Exo 2**, embarcada no pacote (`assets/fonts/exo2-variable-latin.woff2`, fonte

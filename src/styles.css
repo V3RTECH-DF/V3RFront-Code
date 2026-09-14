@@ -180,6 +180,18 @@
  * para título muito comprido, mas não para o caso comum). Em 768px e acima,
  * a media query não se aplica: o cabeçalho continua idêntico a hoje — 64px,
  * uma linha só.
+ *
+ * Título que quebra linha em vez de truncar, dentro deste bloco (a partir
+ * da v0.7.2, medido no RIT360 Premiado): mesmo com a marca já na própria
+ * linha, um logo largo (~170px) ainda deixa pouco espaço para
+ * `.v3r-header__titles` — e o `white-space: nowrap` + `text-overflow:
+ * ellipsis` da regra de base (pensados para a LINHA ÚNICA do cabeçalho
+ * largo) cortavam o título mesmo quando ele cabia em duas linhas. Dentro
+ * desta media query o título passa a quebrar em vez de truncar
+ * (`white-space: normal`, `overflow-wrap: break-word` para não vazar quando
+ * uma palavra isolada excede o espaço); a versão, abaixo dele na mesma
+ * coluna, continua visível. Em 768px e acima nada muda — a regra de base
+ * (nowrap/ellipsis, linha única) segue valendo.
  */
 @media (max-width: 600px) {
   .v3r-header {
@@ -193,6 +205,13 @@
   .v3r-header__brand {
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .v3r-header__title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
   }
 
   .v3r-header__actions {

@@ -269,3 +269,34 @@ describe('divisor do cabeçalho acompanha o logo (contrato §2)', () => {
     expect(dividerBlockMatch![1]).toMatch(/height:\s*40px\s*;/)
   })
 })
+
+describe('título do cabeçalho quebra linha em vez de truncar abaixo de 600px (contrato §2, V3RCore-Code#46)', () => {
+  const narrowBlockMatch = css.match(/@media \(max-width: 600px\) {([\s\S]*?)\n}\n/)
+  const narrowBlock = narrowBlockMatch ? narrowBlockMatch[1] ?? '' : ''
+  // O título dentro do bloco estreito precisa ser a segunda ocorrência da
+  // classe no arquivo (a primeira é a regra de base, de linha única) —
+  // by procurar todas as ocorrências dentro do próprio bloco isolado acima.
+  const titleInNarrowMatch = narrowBlock.match(/\.v3r-header__title\s*{([^}]*)}/)
+  const titleInNarrow = titleInNarrowMatch ? titleInNarrowMatch[1] : ''
+
+  it('a media query de cabeçalho estreito existe e contém uma regra própria para .v3r-header__title', () => {
+    expect(narrowBlockMatch).not.toBeNull()
+    expect(titleInNarrowMatch).not.toBeNull()
+  })
+
+  it('permite quebra de linha em vez de reticências dentro do bloco estreito', () => {
+    expect(titleInNarrow).toMatch(/white-space:\s*normal/)
+    expect(titleInNarrow).not.toMatch(/text-overflow:\s*ellipsis/)
+  })
+
+  it('não deixa uma palavra isolada vazar por cima do layout (overflow-wrap)', () => {
+    expect(titleInNarrow).toMatch(/overflow-wrap:\s*break-word/)
+  })
+
+  it('controle: a regra de BASE (fora da media query) continua com nowrap/ellipsis — desktop não muda', () => {
+    const baseTitleMatch = css.match(/^\.v3r-header__title\s*{([^}]*)}/m)
+    expect(baseTitleMatch).not.toBeNull()
+    expect(baseTitleMatch![1]).toMatch(/white-space:\s*nowrap/)
+    expect(baseTitleMatch![1]).toMatch(/text-overflow:\s*ellipsis/)
+  })
+})
