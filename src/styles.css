@@ -325,6 +325,27 @@
   margin: 12px 0 !important;
 }
 
+/*
+ * Padding de celular do `.notice` (contrato §13, V3RCore-Code#46, mesma
+ * classe de defeito do bloco de checkbox/radio abaixo).
+ *
+ * O bloco acima fixa `padding: 8px 12px` com a mesma especificidade usada
+ * fora de media query — mas o `wp-admin/css/common.css` também REDUZ o
+ * padding do `.notice` dentro de `@media screen and (max-width: 782px)`
+ * (`5px 10px`). Sem essa segunda camada, o padding de desktop vencia a
+ * media query do wp-admin e prendia o aviso em `8px 12px` também no
+ * celular — regressão medida no V3RHelp em 375px. Réplica do valor exato do
+ * `common.css` real; a margem (`12px 0 !important`, decisão própria do
+ * pacote, contrato §8) não muda com a largura e por isso não entra aqui.
+ */
+@media screen and (max-width: 782px) {
+  .v3r-admin-notices > .notice,
+  .v3r-admin-notices > .updated,
+  .v3r-admin-notices > .error {
+    padding: 5px 10px;
+  }
+}
+
 .v3r-admin-notices > .notice p,
 .v3r-admin-notices > .updated p,
 .v3r-admin-notices > .error p {

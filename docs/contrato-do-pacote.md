@@ -528,6 +528,16 @@ ancora essas regras na mesma raiz, igual às de cima. Fora do breakpoint
 de margem restritos a `.wp-admin p`/`.widefat` (mesma exceção já registrada em
 "O que a peça NÃO cobre").
 
+Mesma classe de defeito, mesmo alvo já coberto: o `.notice` também tem
+`padding` reduzido pelo wp-admin (`wp-admin/css/common.css`) dentro da mesma
+`@media screen and (max-width: 782px)` (`8px 12px` no desktop, `5px 10px`
+abaixo de 782px). A v0.7.0 fixava só o valor de desktop, prendendo o aviso em
+`8px 12px` também no celular — regressão medida no V3RHelp em 375px. A
+correção replica o valor de celular do `common.css` real na mesma media
+query, ancorada na mesma raiz. A margem do aviso (`12px 0 !important`,
+decisão própria do pacote, contrato §8) não é do wp-admin e não muda com a
+largura.
+
 **O que a peça NÃO cobre, e por quê:** o GE e o V3RLGPD desenham o PRÓPRIO
 tique/ponto (imagem de fundo com a cor da marca de cada produto, dimensionada
 pela caixa), porque os dois já reduzem `border-radius`/tamanho do controle
