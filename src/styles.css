@@ -162,6 +162,48 @@
 }
 
 /*
+ * Cabeçalho estreito (contrato §2/§7, V3RCore-Code#43).
+ *
+ * Em 375px, `.v3r-header__brand` (logo + divisor + títulos) e
+ * `.v3r-header__actions` (botões de manual/feedback) não cabem lado a lado
+ * na mesma linha de 64px: `.v3r-header__logo` (`flex-shrink: 0`) e
+ * `.v3r-header__actions` (idem) não cedem espaço nenhum, e quem sobra para
+ * encolher é só `.v3r-header__titles` — que chega a largura zero, com o
+ * botão de ação sobrepondo o fim do logo. `scrollWidth` do documento
+ * ultrapassa `clientWidth`, e a PÁGINA inteira rola para o lado.
+ *
+ * A correção quebra o cabeçalho em duas linhas abaixo de 600px — a marca
+ * numa linha, as ações na linha seguinte — em vez de forçar os dois grupos
+ * a dividir uma largura que não têm. Nenhum item precisa encolher abaixo do
+ * próprio conteúdo: título e versão continuam com largura maior que zero
+ * (o truncamento por reticências de `.v3r-header__title` segue existindo
+ * para título muito comprido, mas não para o caso comum). Em 768px e acima,
+ * a media query não se aplica: o cabeçalho continua idêntico a hoje — 64px,
+ * uma linha só.
+ */
+@media (max-width: 600px) {
+  .v3r-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 64px;
+    row-gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .v3r-header__brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .v3r-header__actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 8px;
+  }
+}
+
+/*
  * Navegação (contrato §6-§7). `.v3r-nav-groups` e `.v3r-nav-tabs` só
  * aparecem juntas quando a árvore tem grupos; `.v3r-nav-flat` é o caso de
  * primeira classe de árvore só com telas, e usa a densidade da barra de
@@ -248,12 +290,182 @@
   padding: 0 24px;
 }
 
+/*
+ * Restauração do desenho nativo do `.notice`/`.updated`/`.error` do wp-admin
+ * (contrato §13, V3RCore-Code#46).
+ *
+ * O reset do `cascadeFix`, ancorado no id da raiz para vencer o CSS do
+ * wp-admin (`#raiz *{border:0 solid;margin:0;padding:0}`), também vence o
+ * `.notice` do PRÓPRIO wp-admin dentro da raiz — efeito colateral, não
+ * intenção: `.notice{border-left:4px solid ...;padding:8px 12px}` tem
+ * especificidade (0,1,1)/(0,2,0), e `#raiz *` (1,0,0) vence antes de a
+ * especificidade ser comparada, porque tem ID e o wp-admin não. Sobra uma
+ * faixa colorida (o `background`/`background-color` da variante não é
+ * tocado pelo reset) com o texto colado, sem borda nem respiro.
+ *
+ * A correção replica aqui os valores exatos de `wp-admin/css/common.css`.
+ * `rescopeVendorCss` (responsabilidade 2 do `cascadeFix`) varre TODA regra
+ * deste arquivo — inclusive estas —, então elas saem ancoradas na MESMA
+ * raiz (`${scopeId} .v3r-admin-notices > .notice`, com ID) e voltam a vencer
+ * o reset ancorado pela regra normal da cascata: mais específico ganha.
+ * Em quem não usa o `cascadeFix`, ficam sem escopo e replicam exatamente o
+ * que o wp-admin já aplica — nenhum efeito observável muda.
+ */
 .v3r-admin-notices > .notice,
 .v3r-admin-notices > .updated,
 .v3r-admin-notices > .error {
+  background: #fff;
+  border: none;
+  border-left: 4px solid #c3c4c7;
+  box-shadow: none;
+  padding: 8px 12px;
+  /* Espaçamento próprio da família (decisão do pacote, não do wp-admin):
+     o valor nativo é `5px 15px 2px`; aqui as telas ficam com o aviso colado
+     à barra de navegação acima (contrato §8), então o respiro é uniforme. */
   margin: 12px 0 !important;
+}
+
+.v3r-admin-notices > .notice p,
+.v3r-admin-notices > .updated p,
+.v3r-admin-notices > .error p {
+  margin: 0.5em 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.54;
+  color: #1e1e1e;
+}
+
+.v3r-admin-notices > .notice-success,
+.v3r-admin-notices > .updated {
+  border-left-color: #4ab866;
+  background-color: #eff9f1;
+}
+
+.v3r-admin-notices > .notice-warning {
+  border-left-color: #f0b849;
+  background-color: #fef8ee;
+}
+
+.v3r-admin-notices > .notice-error,
+.v3r-admin-notices > .error {
+  border-left-color: #cc1818;
+  background-color: #fcf0f0;
+}
+
+.v3r-admin-notices > .notice-info {
+  border-left-color: #3858e9;
+  background-color: #fff;
 }
 
 .v3r-admin-notices__marker {
   display: none;
+}
+
+/*
+ * Restauração do desenho nativo de checkbox/radio do wp-admin (contrato §13,
+ * V3RCore-Code#46).
+ *
+ * Mesmo defeito do bloco acima, noutro alvo: `input[type="checkbox"],
+ * input[type="radio"]` do wp-admin (`wp-admin/css/forms.css`) tem
+ * especificidade (0,1,1)/(0,0,2) — sem ID, perde para `#raiz *`/`#raiz
+ * input,...` ((1,0,0)/(1,0,1)) assim que o `cascadeFix` ancora o reset do
+ * Tailwind na raiz. Sobra `appearance` zerado, borda zero e fundo
+ * transparente: o controle continua funcional (o estado muda no DOM) mas
+ * fica invisível na tela — a interface "mentindo" sobre o que está marcado.
+ *
+ * A correção replica aqui os valores exatos que o wp-admin já declara
+ * (incluindo o SVG do tique e o ponto do rádio, ambos brancos sobre a cor
+ * do tema). Cobre AO MENOS os seis estados que as duas cópias já escritas à
+ * mão pelos produtos (GE Associados, V3RLGPD) cobrem: desmarcado, marcado,
+ * `::before` do marcado, desabilitado, foco, e o respiro ao lado do rótulo
+ * (a margem assimétrica `-0.25rem 0.25rem 0 0`, que é o próprio hack do
+ * wp-admin para alinhar o controle com o texto vizinho).
+ *
+ * Mesma técnica do bloco de avisos: `rescopeVendorCss` varre este arquivo
+ * inteiro e ancora estas regras na raiz do consumidor, com ID — e por isso
+ * elas voltam a vencer o reset ancorado. Em quem não usa o `cascadeFix`,
+ * ficam sem escopo e replicam exatamente o wp-admin: nenhum efeito
+ * observável muda.
+ */
+input[type='checkbox'],
+input[type='radio'] {
+  -webkit-appearance: none;
+  border: 1px solid #1e1e1e;
+  border-radius: 2px;
+  background: #fff;
+  color: #1e1e1e;
+  cursor: pointer;
+  display: inline-block;
+  line-height: 0;
+  height: 1rem;
+  width: 1rem;
+  min-width: 1rem;
+  margin: -0.25rem 0.25rem 0 0;
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+  box-shadow: none;
+  transition: 0.05s border-color ease-in-out;
+}
+
+input[type='radio'] {
+  display: inline-flex;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+input[type='checkbox']:focus,
+input[type='radio']:focus {
+  border-color: #1e1e1e;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--wp-admin-theme-color, #2271b1);
+  outline: 2px solid transparent;
+}
+
+input[type='checkbox']:checked::before,
+input[type='radio']:checked::before {
+  float: left;
+  display: inline-block;
+  vertical-align: middle;
+  width: 1rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input[type='checkbox']:checked::before {
+  content: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20d%3D%27M14.83%204.89l1.34.94-5.81%208.38H9.02L5.78%209.67l1.34-1.25%202.57%202.4z%27%20fill%3D%27%23ffffff%27%2F%3E%3C%2Fsvg%3E");
+  margin: -0.1875rem 0 0 -0.25rem;
+  height: 1.3125rem;
+  width: 1.3125rem;
+}
+
+input[type='checkbox']:checked {
+  background: var(--wp-admin-theme-color, #2271b1);
+  border-color: var(--wp-admin-theme-color, #2271b1);
+}
+
+input[type='radio']:checked {
+  background: var(--wp-admin-theme-color, #2271b1);
+  border-color: var(--wp-admin-theme-color, #2271b1);
+}
+
+input[type='radio']:checked::before {
+  content: '';
+  border-radius: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: auto;
+  background-color: #fff;
+  outline: 4px solid transparent;
+}
+
+input[type='checkbox']:disabled,
+input[type='checkbox'].disabled,
+input[type='checkbox'][aria-disabled='true'],
+input[type='radio']:disabled,
+input[type='radio'].disabled,
+input[type='radio'][aria-disabled='true'] {
+  opacity: 0.7;
+  cursor: default;
 }

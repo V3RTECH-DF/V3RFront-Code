@@ -230,14 +230,24 @@ if (existsSync(jsPath) && existsSync(browserJsPath) && existsSync(cssPath)) {
       fail('consumidor construído para o navegador, importando só os componentes, NÃO recebeu o CSS no resultado')
     }
 
+    // A contagem esperada NÃO é fixa em 1: `.v3r-header{` pode legitimamente
+    // aparecer mais de uma vez na folha publicada (ex.: uma regra base e uma
+    // dentro de `@media`, para o cabeçalho estreito — contrato §2/§7,
+    // V3RCore-Code#43). A prova de "não duplicou" é comparar contra o número
+    // de ocorrências na CÓPIA CANÔNICA (`dist/v3r-front.css`, uma só cópia,
+    // por construção): duplicar o import dobraria essa contagem.
+    const sourceCss = readFileSync(cssPath, 'utf8')
+    const expectedOccurrences = (sourceCss.match(new RegExp(marker.source, 'g')) || []).length
+
     const withExplicitStyles = await buildFixture(true)
     const occurrences = (withExplicitStyles.css.match(new RegExp(marker.source, 'g')) || []).length
-    if (occurrences === 1) {
+    if (occurrences === expectedOccurrences) {
       ok('importar componentes e a folha explicitamente não duplica as regras no resultado')
     } else {
       fail(
         `importar componentes e a folha explicitamente produziu ${occurrences} ocorrência(s) de ` +
-          '.v3r-header{ no resultado (esperado 1 — duplicação ou ausência)'
+          `.v3r-header{ no resultado (esperado ${expectedOccurrences}, igual à cópia canônica — ` +
+          'diferença indica duplicação ou ausência)'
       )
     }
   } catch (error) {

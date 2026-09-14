@@ -33,6 +33,17 @@ Descartadas: compacta (118px) e ampla (168px). A ampla consome mais de um quarto
 da altura útil somada à barra do WordPress, e os produtos da casa são cadastros e
 listas, onde a altura faz falta.
 
+### Cabeçalho estreito (a partir da v0.7.0)
+
+Abaixo de 600px de largura, o cabeçalho quebra em duas linhas — a marca (logo +
+divisor + título/versão) numa linha, as ações (manual, feedback) na linha
+seguinte — em vez de manter os 64px de uma linha só. Medido no V3RLGPD em
+375px (`V3RCore-Code#43`): com os dois grupos disputando uma única linha,
+`.v3r-header__logo` e `.v3r-header__actions` não cedem espaço (`flex-shrink:
+0`), e quem encolhe até desaparecer é `.v3r-header__titles` — o botão de ação
+chega a cobrir o fim do logo. Em 768px e acima, nada muda: 64px, uma linha,
+igual a antes desta versão.
+
 ## 3. Tipografia
 
 **Exo 2**, embarcada no pacote (`assets/fonts/exo2-variable-latin.woff2`, fonte
@@ -257,6 +268,13 @@ Abaixo da barra, cabeçalho e navegação ficam sempre na mesma altura, e o avis
 continua sendo a primeira coisa do conteúdo. Os adotantes anteriores à regra
 divergiam (V3RLGPD acima da barra, GE Associados abaixo).
 
+**O desenho do `.notice`/`.updated`/`.error` dentro desta área é restaurado
+pelo pacote quando o consumidor usa o `cascadeFix`** (contrato §13,
+`V3RCore-Code#46`) — borda esquerda de 4px, padding e a cor de cada variante
+(`notice-success`/`-warning`/`-error`/`-info`). Sem isso, o mesmo reset que o
+`cascadeFix` ancora para vencer o wp-admin também apaga o desenho nativo do
+próprio aviso do wp-admin dentro da raiz.
+
 ## 9. Fora desta versão
 
 O **atalho de busca de tela** (`Ctrl+K`) e o **botão de menu único no celular**.
@@ -458,6 +476,53 @@ qualquer seletor de atributo/classe único que o wp-admin declare.
    correção dá ao CSS do pacote a MESMA âncora: uma vez em `#raiz
    .v3r-nav__item` (1,1,0), ele volta a vencer o reset ancorado pela regra
    normal da cascata — mais específico ganha.
+
+### A responsabilidade 2 também restaura o desenho nativo do wp-admin (a partir da v0.7.0)
+
+A mesma âncora que faz `.v3r-nav__item` voltar a vencer o reset também alcança
+CSS deste pacote que **não é da família**, mas do próprio wp-admin: checkbox,
+radio e `.notice`/`.updated`/`.error`. Medido no V3RLicense (`V3RCore-Code#46`):
+`input[type="checkbox"] { border: 1px solid #1e1e1e; ... }` e `.notice {
+border-left: 4px solid ...; padding: 8px 12px; }` do `wp-admin/css/forms.css`
+e `common.css` não têm ID, então perdem para `#raiz *`/`#raiz input,...`
+assim que o reset é ancorado — mesmo defeito da seção acima, noutro alvo. O
+controle continua funcional (o estado muda no DOM), só fica invisível na
+tela; o aviso vira uma faixa colorida sem borda nem respiro, com o texto
+colado.
+
+`src/styles.css` passou a declarar os valores exatos que o wp-admin já usa
+para esses dois casos, cobrindo ao menos os seis estados que as duas
+implementações independentes já escritas à mão (GE Associados, V3RLGPD)
+cobriam: desmarcado, marcado, `::before` do marcado, desabilitado, foco, e o
+respiro ao lado do rótulo. `rescopeVendorCss` varre **todas** as regras deste
+arquivo, então as novas saem ancoradas na mesma raiz que `.v3r-nav__item` —
+sem exigir mudança nenhuma no `unwrapCssLayers.ts`/`rescopeVendorCss.ts`: a
+responsabilidade 2 já cobria qualquer regra nova do pacote, só faltava o
+pacote declarar estas. Em quem não usa o `cascadeFix`, essas regras ficam sem
+escopo e replicam exatamente o que o wp-admin já aplica — nenhum efeito
+observável muda.
+
+⚠️ **As duas cópias do GE Associados e do V3RLGPD ficam redundantes a partir
+desta versão** — ao atualizar para v0.7.0, os respectivos CSS de restauração
+de checkbox/radio (`src/admin/src/index.css` no GE,
+`src/admin/src/front/front.css` no V3RLGPD) podem ser removidos. Ver "O que a
+peça NÃO cobre" abaixo antes de remover.
+
+**O que a peça NÃO cobre, e por quê:** o GE e o V3RLGPD desenham o PRÓPRIO
+tique/ponto (imagem de fundo com a cor da marca de cada produto, dimensionada
+pela caixa), porque os dois já reduzem `border-radius`/tamanho do controle
+para a própria identidade visual. A peça compartilhada restaura o desenho
+NATIVO do wp-admin (fidelidade ao que o admin já desenha, contrato §13, não
+uma nova identidade) — inclusive o SVG de tique embutido no `::before` que o
+wp-admin injeta, com o tamanho fixo (`1.3125rem`) que ele já usa. Produto que
+queira o próprio tique/cor de marca no controle continua precisando do
+próprio CSS por cima (mais específico que o do pacote, sem escopo extra
+nenhum necessário: `#meu-app input[type="checkbox"]:checked` já vence
+`${scopeId} input[type="checkbox"]:checked` do pacote por ter mais um nível
+de especificidade). Também não é coberto: os ajustes de margem específicos de
+`.wp-admin p input[type="checkbox"]`/`label` que o wp-admin aplica em
+contextos de formulário mais antigos (`options.php` etc.) — fora do escopo
+das telas React da família, que não usam esse markup.
 
 ### Por que o filtro é por caminho de módulo, e não por classe/propriedade
 
