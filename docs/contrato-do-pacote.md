@@ -704,6 +704,22 @@ o `cascadeFix` — em 1440px e em 375px. O controle do PRÓPRIO produto dentro d
 raiz (`button.button`, `ul`, `td`) não muda nada em relação à versão anterior
 do pacote: continua zerado pelo reset, exatamente como sempre esteve.
 
+### Recomendação ao consumidor: um caso fino que prova a guarda no bundle
+
+**O consumidor mantém um caso fino que prova que a guarda chegou ao bundle
+dele.** Não é para reconferir o conteúdo de `WP_OWNED_TREES` — isso é
+responsabilidade do pacote, coberta pela suíte dele. É para proteger o elo que
+o pacote não alcança: a versão fixada pelo consumidor no próprio
+`package.json`/lockfile e o bundle que sai da máquina dele.
+
+Forma sugerida: sobre o CSS construído, afirmar que as regras da camada base
+ancoradas na raiz trazem `:not(:where(` no seletor, e que um seletor de
+`utilities` NÃO traz.
+
+Se a guarda sumir numa atualização futura do pacote ou numa mudança de build,
+o bundle sai sem ela e ninguém percebe até um cliente abrir o editor do
+WordPress dentro do painel.
+
 ### Por que o filtro é por caminho de módulo, e não por classe/propriedade
 
 A responsabilidade 2 intercepta **só** o CSS cujo caminho do módulo resolvido
