@@ -716,6 +716,17 @@ Forma sugerida: sobre o CSS construído, afirmar que as regras da camada base
 ancoradas na raiz trazem `:not(:where(` no seletor, e que um seletor de
 `utilities` NÃO traz.
 
+⚠️ **Unidade de contagem: `:not(:where(`, o número de guardas — nunca o nome
+de uma árvore da lista.** Contar pelo nome (`wp-editor-wrap`, por exemplo) sai
+errado: cada guarda cita a árvore **e** o descendente (`.a, .a *`), então essa
+contagem sempre dá o dobro, e muda sozinha a cada alteração de tamanho de
+`WP_OWNED_TREES` — vira falso alarme numa atualização do pacote que não
+quebrou nada. Caso real: duas medições da mesma entrega chegaram a 87 e a 174
+no mesmo arquivo, só por contarem coisas diferentes, e quase viraram
+investigação de defeito inexistente. E o CSS construído sai minificado numa
+linha só — contar LINHAS dá 1 e não diz nada; a contagem é sempre de
+ocorrências da string.
+
 Se a guarda sumir numa atualização futura do pacote ou numa mudança de build,
 o bundle sai sem ela e ninguém percebe até um cliente abrir o editor do
 WordPress dentro do painel.
