@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { unwrapAndRescopeCss } from '../../vite/unwrapCssLayers'
+import { WP_OWNED_TREES, wpOwnedTreesGuard } from '../../vite/wpOwnedTrees'
 
 /**
  * Teste de regressão do bug estrutural: no bundle publicado, as utilitárias
@@ -100,5 +101,80 @@ describe('unwrapAndRescopeCss', () => {
     expect(out).not.toMatch(/#meu-plugin-app/)
     expect(out).toMatch(/\.meu-plugin-reset \*/)
     expect(out).toMatch(/^button \{/m)
+  })
+})
+
+/**
+ * `V3RCore-Code#51` — a guarda contra as árvores do WordPress (editor,
+ * TinyMCE, botões de mídia, modal) é aplicada SÓ na camada `base`, e ANTES
+ * do desembrulho (a informação de camada não sobrevive a ele).
+ */
+describe('unwrapAndRescopeCss — guarda contra as árvores do WordPress (#51)', () => {
+  const CSS_COM_EDITOR = `
+@layer base {
+  *, ::before, ::after {
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  button {
+    background-color: transparent;
+    font-family: inherit;
+  }
+}
+@layer utilities {
+  .rounded-md {
+    border-radius: 0.375rem;
+  }
+}
+`
+
+  it('toda regra reescrita da base leva a guarda', () => {
+    const out = unwrapAndRescopeCss(CSS_COM_EDITOR, SCOPE_ID)
+    const guard = wpOwnedTreesGuard()
+    expect(out).toContain(`#meu-plugin-app *${guard}`)
+    expect(out).toContain(`#meu-plugin-app button${guard}`)
+    // Pseudo-elemento continua no fim do composto, depois da guarda.
+    expect(out).toContain(`${guard}::before`)
+    expect(out).toContain(`${guard}::after`)
+  })
+
+  it('controle negativo: nenhuma regra de utilities leva a guarda', () => {
+    const out = unwrapAndRescopeCss(CSS_COM_EDITOR, SCOPE_ID)
+    expect(out).toMatch(/#meu-plugin-app \.rounded-md \{/)
+    expect(out).not.toMatch(/\.rounded-md:not\(/)
+  })
+
+  it('a guarda exclui de fato as árvores do WordPress, para cada uma da lista padrão', () => {
+    const guard = wpOwnedTreesGuard()
+    for (const tree of WP_OWNED_TREES) {
+      expect(guard).toContain(tree)
+    }
+  })
+
+  it('percentuais de @keyframes dentro da base não viram seletor (não recebem a guarda)', () => {
+    const cssComKeyframes = '@layer base { @keyframes spin { 0% { opacity: 0; } 100% { opacity: 1; } } }'
+    const out = unwrapAndRescopeCss(cssComKeyframes, SCOPE_ID)
+    expect(out).not.toContain('0%:not(')
+    expect(out).not.toContain('100%:not(')
+  })
+
+  it('opção wpOwnedTrees substitui a lista padrão', () => {
+    const cssComArvoreCustom = '@layer base { * { margin: 0; } }'
+    const out = unwrapAndRescopeCss(cssComArvoreCustom, SCOPE_ID, ['.minha-arvore'])
+    expect(out).toContain('#meu-plugin-app *:not(:where(.minha-arvore, .minha-arvore *))')
+  })
+
+  it('a especificidade da regra reescrita não muda com a guarda (:where() soma zero)', () => {
+    // "*" ancorado (1,0,0) continua (1,0,0) mesmo com a guarda — :where()
+    // nunca soma especificidade, então o seletor perde para qualquer
+    // classe/atributo único do wp-admin exatamente como perderia sem a
+    // guarda: a comparação é feita fora daqui (rescopeSelectors.test.ts),
+    // aqui só se garante que a guarda em si não introduz pontuação.
+    const guard = wpOwnedTreesGuard()
+    // Especificidade de :not(:where(...)) é 0 — :where() sempre é zero, e
+    // :not() herda a do argumento MAIS específico, que aqui é zero também.
+    expect(guard).toMatch(/^:not\(:where\(/)
+    expect(guard).not.toMatch(/:not\([^:]/) // :not() não recebe argumento fora de :where()
   })
 })

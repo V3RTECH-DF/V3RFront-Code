@@ -96,6 +96,16 @@ describe('unwrapCssLayersPlugin — responsabilidade 1 (ancorar o CSS do plugin)
     callGenerateBundle(plugin, bundle)
     expect(bundle['assets/main.css']).toEqual({ type: 'chunk', code: 'console.log(1)' })
   })
+
+  it('opção wpOwnedTrees (#51) chega até a guarda da camada base', () => {
+    const plugin = unwrapCssLayersPlugin(SCOPE_ID, { wpOwnedTrees: ['.minha-arvore'] })
+    const bundle: Record<string, { type: string; source: string }> = {
+      'assets/main.css': { type: 'asset', source: '@layer base { * { margin: 0; } }' },
+    }
+    callGenerateBundle(plugin, bundle)
+    expect(bundle['assets/main.css']?.source).toContain(':not(:where(.minha-arvore, .minha-arvore *))')
+    expect(bundle['assets/main.css']?.source).not.toContain('.wp-editor-wrap')
+  })
 })
 
 describe('as duas responsabilidades juntas — o cenário real do defeito', () => {

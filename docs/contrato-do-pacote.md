@@ -633,6 +633,77 @@ de especificidade). Também não é coberto: os ajustes de margem específicos d
 contextos de formulário mais antigos (`options.php` etc.) — fora do escopo
 das telas React da família, que não usam esse markup.
 
+### As árvores que o WordPress desenha DENTRO da raiz (a partir da v0.8.0)
+
+A responsabilidade 1 ancora a camada `base` (o *preflight* do Tailwind) no id
+da raiz para vencer o CSS sem-camada do wp-admin. Efeito colateral medido ao
+vivo (V3REvent, `V3REvent-Code#185`, corrigido localmente na v1.89.0 antes de
+esta peça subir para a família): o MESMO reset também vence o CSS do PRÓPRIO
+WordPress para componentes que o WordPress desenha DENTRO da raiz — o editor
+de texto clássico (TinyMCE). As abas "Visual"/"Código" ficavam sem fundo nem
+borda, o botão "Adicionar mídia" virava texto solto, e os botões da barra de
+formatação saíam espremidos e sem separador. O campo continuava funcionando —
+era só aparência —, mas parecia defeito para quem usa.
+
+A correção EXCLUI essas árvores do reset da `base`, em vez de reestilizar
+controle a controle (o que copiaria o CSS do WordPress para dentro do nosso, e
+envelheceria junto com ele): `unwrapAndRescopeCss` aplica, só às regras da
+camada `base` e só a elas, o seletor `:not(:where(.wp-editor-wrap,
+.wp-editor-wrap *, .mce-container, .mce-container *, .wp-media-buttons,
+.wp-media-buttons *, .media-modal, .media-modal *))` (`wpOwnedTrees.ts`,
+constante `WP_OWNED_TREES`).
+
+**Por que `:where()`:** especificidade ZERO, sempre — e `:not()` herda a do
+argumento mais específico, que aqui é zero também. A guarda para de casar
+dentro das árvores do WordPress, mas NÃO muda em uma unidade sequer a
+especificidade da regra que a carrega: `*` ancorado continua `(1,0,0)` depois
+da guarda, `button` ancorado continua `(1,0,1)`. Isso importa porque toda a
+conta que `rescopeSelector` já faz para vencer o wp-admin (contrato, seção
+acima) depende de uma especificidade exata — mudar esse número, ainda que por
+uma peça que "só exclui", derrubaria regra que hoje vence por margem mínima.
+
+**Por que só a `base`, e por que a cirurgia acontece ANTES do desembrulho:**
+`components`/`utilities` são classes NOSSAS (Tailwind, ou autor do
+consumidor) — não existe `.rounded-md` dentro do editor do WordPress, e
+restringir milhares de regras de utilitário só engordaria a folha sem proteger
+nada. E a cirurgia só pode acontecer enquanto a regra ainda está DENTRO do
+`@layer base`: é o único momento do pipeline em que "esta regra é da base"
+ainda é uma informação disponível — a linha seguinte do mesmo `walkRules`,
+`layer.replaceWith(layer.nodes)`, desembrulha o `@layer` e apaga essa
+informação para sempre. Por isso a guarda é aplicada dentro de
+`unwrapAndRescopeCss`, não como um plugin separado rodando antes dele (a forma
+como o V3REvent resolveu localmente, antes de esta peça subir para a
+família): aqui as duas cirurgias — guarda e re-escopo — compartilham a mesma
+passada sobre a mesma regra, na mesma camada, sem depender de ordem entre dois
+plugins do consumidor.
+
+**Como o consumidor acrescenta árvores próprias:** `cascadeFix`/
+`unwrapCssLayersPlugin` aceitam um segundo parâmetro, `{ wpOwnedTrees }`, que
+SUBSTITUI a lista padrão inteira — para acrescentar sem perder o padrão,
+espalhe-o:
+
+```ts
+import { cascadeFix, WP_OWNED_TREES } from '@v3rtech/v3r-front/vite'
+
+cascadeFix('#meu-plugin-app', { wpOwnedTrees: [...WP_OWNED_TREES, '.meu-color-picker'] })
+```
+
+Sem o segundo parâmetro, `cascadeFix('#meu-plugin-app')` continua funcionando
+exatamente como antes — a lista padrão (`WP_OWNED_TREES`) é a mesma que
+resolveu o caso do V3REvent: editor clássico, TinyMCE, botões de mídia e o
+modal de mídia (`.media-modal` entra mesmo sendo comum ele ser anexado ao
+`<body>`, fora da raiz — o custo de listá-lo é zero, e cobre o dia em que o
+WordPress mudar de lugar).
+
+**Prova em navegador real** (Chromium, fixture com `forms.css`/`common.css`/
+CSS do editor reais do wp-admin): dentro da raiz, com o editor do WordPress
+presente, as abas `.wp-switch-editor`, o link "Adicionar mídia"
+(`.wp-media-buttons a`) e os botões da barra (`.mce-btn button`) saem com os
+MESMOS valores computados (padding, borda, fundo, `box-sizing`) que teriam sem
+o `cascadeFix` — em 1440px e em 375px. O controle do PRÓPRIO produto dentro da
+raiz (`button.button`, `ul`, `td`) não muda nada em relação à versão anterior
+do pacote: continua zerado pelo reset, exatamente como sempre esteve.
+
 ### Por que o filtro é por caminho de módulo, e não por classe/propriedade
 
 A responsabilidade 2 intercepta **só** o CSS cujo caminho do módulo resolvido

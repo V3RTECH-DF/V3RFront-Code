@@ -17,4 +17,8 @@ describe('cascadeFix — as duas responsabilidades numa peça só', () => {
     expect(painel[0]?.name).toBe(site[0]?.name)
     expect(painel).not.toBe(site)
   })
+
+  it('continua funcionando sem options (compatibilidade com quem já usa)', () => {
+    expect(() => cascadeFix('#meu-plugin-app')).not.toThrow()
+  })
 })

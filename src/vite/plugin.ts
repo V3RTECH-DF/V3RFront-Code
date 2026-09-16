@@ -7,6 +7,8 @@
 import type { Plugin } from 'vite'
 import { unwrapAndRescopeCss } from './unwrapCssLayers'
 import { rescopeVendorCss } from './rescopeVendorCss'
+import { WP_OWNED_TREES } from './wpOwnedTrees'
+import type { CascadeFixOptions } from './wpOwnedTrees'
 
 /**
  * Responsabilidade 1 — roda em `generateBundle`, sobre TODO CSS que sair do
@@ -18,8 +20,13 @@ import { rescopeVendorCss } from './rescopeVendorCss'
  * gerou dentro de `@layer` — CSS de autor escrito à mão pelo plugin,
  * sem `@layer`, passa por este plugin sem qualquer alteração (não há
  * `@layer` para desembrulhar, e fora de `@layer` nada é reescrito aqui).
+ *
+ * `options.wpOwnedTrees` (`V3RCore-Code#51`) substitui a lista padrão de
+ * árvores do WordPress excluídas do reset da camada `base` — ver
+ * `wpOwnedTrees.ts` e o contrato §13.
  */
-export function unwrapCssLayersPlugin(scopeId: string): Plugin {
+export function unwrapCssLayersPlugin(scopeId: string, options: CascadeFixOptions = {}): Plugin {
+  const wpOwnedTrees = options.wpOwnedTrees ?? WP_OWNED_TREES
   return {
     name: 'v3r-front-unwrap-css-layers',
     apply: 'build',
@@ -28,7 +35,7 @@ export function unwrapCssLayersPlugin(scopeId: string): Plugin {
         if (!fileName.endsWith('.css')) continue
         const asset = bundle[fileName]
         if (!asset || asset.type !== 'asset' || typeof asset.source !== 'string') continue
-        asset.source = unwrapAndRescopeCss(asset.source, scopeId)
+        asset.source = unwrapAndRescopeCss(asset.source, scopeId, wpOwnedTrees)
       }
     },
   }
