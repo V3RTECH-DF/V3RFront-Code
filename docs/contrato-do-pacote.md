@@ -727,6 +727,16 @@ investigação de defeito inexistente. E o CSS construído sai minificado numa
 linha só — contar LINHAS dá 1 e não diz nada; a contagem é sempre de
 ocorrências da string.
 
+**O teste prende o MÉTODO, não o número exato de guardas.** Congelar a
+contagem faria qualquer regra nova da camada `base` — legítima, sem relação
+com o defeito original — reprovar o teste: falso alarme pela porta oposta à
+que a padronização da unidade (acima) fechou. O que o teste afirma: um piso
+de guardas (nunca menos que isso); a identidade "ocorrências do nome da
+árvore no seletor = guardas × 2"; e que toda guarda presente na folha é
+exatamente uma das que `wpOwnedTreesGuard()` do pacote instalado devolve —
+nunca uma lista copiada à mão. O número exato observado fica como referência
+em comentário, não como asserção.
+
 Se a guarda sumir numa atualização futura do pacote ou numa mudança de build,
 o bundle sai sem ela e ninguém percebe até um cliente abrir o editor do
 WordPress dentro do painel.
@@ -845,3 +855,31 @@ uma raiz (ou um ancestral dentro dela) que fixe `font-family` — seja pelo
 quem precisa neutralizar essa herança naquela árvore, se quiser a fonte
 original do WordPress ali dentro. No painel do V3RLGPD isso não aparece,
 porque a raiz de lá não fixa `font-family`.
+
+**O pacote não é API de geometria.** O que ele promete é devolver, dentro do
+wp-admin, o desenho que o próprio wp-admin já dava — nunca uma medida própria
+para o consumidor se apoiar fora dali. Produto que precise de uma medida (por
+exemplo `min-width`, para o controle não encolher dentro de uma linha flex)
+declara essa medida no próprio CSS, e não na expectativa de que a restauração
+do pacote continue fornecendo-a.
+
+Caso real: um consumidor tinha o invariante de geometria do checkbox apoiado
+no `min-width` que vinha da restauração do pacote (`flex-shrink: 0`/
+`min-width`, a partir da v0.7.2, acima). Quando a v0.7.3 escopou a
+restauração ao wp-admin, o controle passou a encolher para 13px de largura no
+bundle do FRONTEND (fora do wp-admin), em 375px — comportamento correto pela
+regra da seção "A restauração só vale DENTRO do wp-admin" acima, mas quebra
+para quem dependia do efeito colateral.
+
+⚠️ **No bundle do painel pode não existir bloco próprio de
+`appearance`/`width`/`height` onde pendurar essa declaração** — lá tudo vinha
+da restauração do pacote. Nesse caso, o consumidor cria o bloco.
+
+**Como medir controle nativo (`appearance: auto`):** o navegador desenha a
+borda dele fora do que o estilo computado revela — `border-width` sai `0`
+mesmo com a borda visível na tela. Contraste desses controles se mede por
+amostragem de pixel, nunca por estilo computado. E a amostragem exige
+cuidado com o recorte: numa caixa de 13px (o caso real acima), as linhas da
+própria borda caem dentro da janela de amostragem, e o "marcador" medido
+passa a ser a borda — aconteceu numa medição real, e quase virou regressão
+inexistente.
