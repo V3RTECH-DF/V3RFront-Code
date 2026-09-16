@@ -720,6 +720,13 @@ Se a guarda sumir numa atualização futura do pacote ou numa mudança de build,
 o bundle sai sem ela e ninguém percebe até um cliente abrir o editor do
 WordPress dentro do painel.
 
+⚠️ **Armadilha de medição: o CSS construído tem hash no nome do arquivo**
+(`main-*.css`). Reabrir a mesma URL depois de atualizar o pacote pode servir
+o bundle **anterior** vindo do cache do navegador, e a medição sai "não
+corrigido" com o código certo já instalado — aconteceu numa medição real.
+Antes de concluir qualquer coisa a partir do CSS servido ao navegador,
+compare o hash desse arquivo com o do arquivo presente na cópia instalada.
+
 ### Por que o filtro é por caminho de módulo, e não por classe/propriedade
 
 A responsabilidade 2 intercepta **só** o CSS cujo caminho do módulo resolvido
@@ -777,3 +784,53 @@ rastro da ferramenta de build — `postcss` ou os nomes dos plugins Vite da
 correção da cascata. `@v3rtech/v3r-front/vite` é gerado por uma passada de
 build **separada** (`vite.config.tooling.ts`, entrada `src/vite/index.ts`),
 com `vite` e `postcss` externos.
+
+### A guarda alcança só o que está em camada (a partir das adoções da v0.8.0)
+
+A guarda das árvores do WordPress (acima) opera sobre a camada `base` do
+Tailwind — é o único lugar do pipeline onde ela consegue agir. Reset escrito à
+mão pelo próprio produto, **fora de `@layer`**, nunca passa por ali, e por
+isso fica de fora dela.
+
+Medido no V3RLGPD depois de subir para a v0.8.0: o editor clássico continuava
+sem borda e sem fundo dentro da raiz. Quem zerava não era o preflight do
+Tailwind — já excluído pela guarda —, era o reset próprio do produto
+(`#raiz :where(button) { border: 0; }` e equivalentes), escrito fora de
+`@layer`.
+
+Dois caminhos, nesta ordem:
+
+1. **O bloco que PUDER entrar em `@layer base` entra.** A mesma passada do
+   pacote desembrulha, ancora e aplica a guarda de graça — é a solução sem
+   custo de manutenção.
+2. **O bloco que precisar ficar fora de camada de propósito mantém guarda
+   própria, mas DERIVADA da lista do pacote** — nunca copiada à mão. `WP_OWNED_TREES`
+   e `wpOwnedTreesGuard()` são exportados (`@v3rtech/v3r-front/vite`) exatamente
+   para isso: gere o seletor de exclusão no build a partir deles, ou escreva-o à
+   mão com um teste que compare a string com a que `wpOwnedTreesGuard()` devolve
+   e reprove quando as duas descolarem. Lista copiada sem esse elo é o que não
+   pode existir: descola na primeira versão nova do pacote e falha em silêncio.
+
+No V3REvent há blocos que dependem de ficar fora de camada de propósito — é
+por isso que o caminho 2 existe, e não só o 1.
+
+### Limite da guarda: ela devolve o que o RESET apagava, não o que a HERANÇA carrega
+
+A guarda (acima) neutraliza o preflight da `base` dentro das árvores do
+WordPress — mas herança de propriedade não se filtra por seletor, e a guarda
+não tenta fazer isso.
+
+Medido na gestão embutida do V3RLGPD: uma árvore do WordPress dentro da raiz
+herda `font-family` e `line-height` da própria raiz, que os fixa por causa do
+`all: initial` (responsabilidade 1, acima). Por isso essa árvore sai com
+altura e fonte diferentes de uma cópia dela mesma fora da raiz — sem que isso
+seja defeito da guarda nem do produto: a guarda existe para desfazer o que o
+*reset* apaga, e fonte/altura de linha ali não chegam por reset, chegam por
+herança do ancestral.
+
+Consequência prática: produto que embuta um componente do WordPress DENTRO de
+uma raiz (ou um ancestral dentro dela) que fixe `font-family` — seja pelo
+`all: initial` do painel embutido, seja pela classe `.v3r-typography` do §3 — é
+quem precisa neutralizar essa herança naquela árvore, se quiser a fonte
+original do WordPress ali dentro. No painel do V3RLGPD isso não aparece,
+porque a raiz de lá não fixa `font-family`.
